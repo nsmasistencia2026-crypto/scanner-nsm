@@ -257,11 +257,8 @@ function tickScan() {
   c.width = v.videoWidth;
   c.height = v.videoHeight;
   var ctx = c.getContext("2d", {willReadFrequently: true});
-  // Voltear horizontalmente el canvas para corregir espejo de camara frontal
-  ctx.save();
-  ctx.scale(-1, 1);
-  ctx.drawImage(v, -c.width, 0, c.width, c.height);
-  ctx.restore();
+  // Dibujar normal sin espejo para que jsQR lea correctamente
+  ctx.drawImage(v, 0, 0, c.width, c.height);
   var img = ctx.getImageData(0, 0, c.width, c.height);
   var code = jsQR(img.data, img.width, img.height, {inversionAttempts:"attemptBoth"});
   if (code && code.data) {
