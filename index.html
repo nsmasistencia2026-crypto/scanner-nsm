@@ -28,14 +28,10 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
 .cameraWrap { position:relative; flex:1; background:#000; overflow:hidden; min-height:0; }
 #video { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; transform:scaleX(-1); }
 #canvas { display:none; }
-.qrFrame { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(320px,85vw); height:min(320px,85vw); pointer-events:none; }
-.qrCorner { position:absolute; width:36px; height:36px; border-color:#2979ff; border-style:solid; }
-.tl { top:0; left:0; border-width:4px 0 0 4px; border-radius:6px 0 0 0; }
-.tr { top:0; right:0; border-width:4px 4px 0 0; border-radius:0 6px 0 0; }
-.bl { bottom:0; left:0; border-width:0 0 4px 4px; border-radius:0 0 0 6px; }
-.br { bottom:0; right:0; border-width:0 4px 4px 0; border-radius:0 0 6px 0; }
-.scanLine { position:absolute; left:4px; right:4px; height:3px; background:linear-gradient(90deg,transparent,#2979ff,transparent); animation:scanAnim 2s ease-in-out infinite; }
-@keyframes scanAnim { 0%{top:4px} 100%{top:calc(100% - 7px)} }
+.qrFrame { position:absolute; inset:0; pointer-events:none; }
+.qrCorner { display:none; }
+.tl,.tr,.bl,.br { display:none; }
+.scanLine { display:none; }
 .noInternet { position:absolute; top:0; left:0; right:0; background:#ff1744; color:#fff; text-align:center; padding:10px; font-weight:700; font-size:13px; display:none; z-index:20; }
 .resultOverlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.15s; background:rgba(0,0,0,0.6); }
 .resultOverlay.show { opacity:1; }
@@ -90,13 +86,7 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
   <div class="cameraWrap">
     <video id="video" autoplay playsinline muted webkit-playsinline></video>
     <canvas id="canvas"></canvas>
-    <div class="qrFrame">
-      <div class="qrCorner tl"></div>
-      <div class="qrCorner tr"></div>
-      <div class="qrCorner bl"></div>
-      <div class="qrCorner br"></div>
-      <div class="scanLine"></div>
-    </div>
+
     <div class="resultOverlay" id="resultOverlay">
       <div class="resultCard" id="resultCard">
         <div class="resultEstado" id="resEstado">---</div>
