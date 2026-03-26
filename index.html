@@ -3,13 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta http-equiv="Permissions-Policy" content="camera=*, microphone=()">
-<meta http-equiv="Feature-Policy" content="camera *">
 <title>Scanner QR - Asistencia</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+
 #loginScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding:24px; background:radial-gradient(ellipse at top,#111827,#0d0d0d); }
 .logoTitle { font-size:52px; font-weight:900; color:#2979ff; letter-spacing:6px; text-align:center; line-height:1; }
 .logoSub { font-size:12px; color:#555; letter-spacing:3px; text-transform:uppercase; text-align:center; margin:8px 0 40px; }
@@ -17,23 +15,25 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
 .fieldLabel { font-size:11px; color:#666; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; display:block; }
 .fieldInput { width:100%; background:#0d0d0d; border:1px solid #333; border-radius:8px; padding:14px; color:#f0f0f0; font-size:16px; margin-bottom:16px; outline:none; }
 .fieldInput:focus { border-color:#2979ff; }
-.btnLogin { width:100%; background:#2979ff; color:#fff; border:none; border-radius:8px; padding:16px; font-size:18px; font-weight:700; letter-spacing:2px; cursor:pointer; margin-top:4px; }
-.btnLogin:disabled { opacity:0.4; cursor:not-allowed; }
+.btnLogin { width:100%; background:#2979ff; color:#fff; border:none; border-radius:8px; padding:16px; font-size:18px; font-weight:700; letter-spacing:2px; cursor:pointer; }
+.btnLogin:disabled { opacity:0.4; }
 .loginError { background:#3d0011; border:1px solid #ff1744; border-radius:8px; padding:12px; color:#ff1744; font-size:13px; text-align:center; margin-bottom:12px; display:none; }
+
 #scannerScreen { display:none; flex-direction:column; height:100vh; }
-.scanHeader { background:#1a1a1a; border-bottom:1px solid #2a2a2a; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.scanHeader { background:#1a1a1a; border-bottom:1px solid #2a2a2a; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; z-index:10; }
 .scanHeaderInst { color:#2979ff; font-weight:700; font-size:15px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .scanHeaderUser { font-size:11px; color:#555; text-align:right; }
 .scanHeaderUser b { display:block; color:#f0f0f0; font-size:13px; }
-.cameraWrap { position:relative; flex:1; background:#000; overflow:hidden; min-height:0; }
-#video { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; transform:scaleX(-1); }
-#canvas { display:none; }
-.qrFrame { position:absolute; inset:0; pointer-events:none; }
-.qrCorner { display:none; }
-.tl,.tr,.bl,.br { display:none; }
-.scanLine { display:none; }
-.noInternet { position:absolute; top:0; left:0; right:0; background:#ff1744; color:#fff; text-align:center; padding:10px; font-weight:700; font-size:13px; display:none; z-index:20; }
-.resultOverlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.15s; background:rgba(0,0,0,0.6); }
+
+#reader { flex:1; width:100%; }
+
+.scanFooter { background:#1a1a1a; border-top:1px solid #2a2a2a; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.footerStatus { font-size:11px; color:#555; }
+.footerStatus b { display:block; font-size:13px; font-weight:600; color:#2979ff; }
+.footerBtns { display:flex; gap:8px; }
+.btnIcon { background:#0d0d0d; border:1px solid #2a2a2a; border-radius:8px; padding:9px 16px; color:#f0f0f0; font-size:14px; cursor:pointer; font-weight:600; }
+
+.resultOverlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.15s; background:rgba(0,0,0,0.85); z-index:100; }
 .resultOverlay.show { opacity:1; }
 .resultCard { width:min(300px,88vw); border-radius:18px; padding:28px 20px; text-align:center; border:2px solid; }
 .resultCard.puntual { background:rgba(0,50,20,0.97); border-color:#00e676; box-shadow:0 0 50px rgba(0,230,118,0.3); }
@@ -44,27 +44,24 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
 .puntual .resultEstado { color:#00e676; }
 .tarde .resultEstado { color:#ff9100; }
 .falta .resultEstado { color:#ff1744; }
-.error .resultEstado { color:#666; font-size:42px; }
+.error .resultEstado { color:#666; font-size:36px; }
 .resultId { font-size:26px; font-weight:700; color:rgba(255,255,255,0.5); letter-spacing:3px; margin-bottom:4px; }
 .resultHora { font-size:15px; color:rgba(255,255,255,0.5); margin-bottom:8px; }
 .resultTipo { display:inline-block; font-size:11px; letter-spacing:2px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.4); }
-.resultMsg { font-size:13px; color:rgba(255,255,255,0.6); margin-top:10px; line-height:1.4; }
-.scanFooter { background:#1a1a1a; border-top:1px solid #2a2a2a; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
-.footerStatus { font-size:11px; color:#555; }
-.footerStatus b { display:block; font-size:13px; font-weight:600; color:#2979ff; }
-.footerBtns { display:flex; gap:8px; }
-.btnIcon { background:#0d0d0d; border:1px solid #2a2a2a; border-radius:8px; padding:9px 16px; color:#f0f0f0; font-size:14px; cursor:pointer; font-weight:600; }
-#licenciaScreen { display:none; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding:32px; text-align:center; background:#0d0d0d; }
-.licTitulo { font-size:32px; font-weight:900; color:#ff1744; letter-spacing:3px; margin-bottom:12px; }
-.licMsg { color:#666; line-height:1.6; max-width:280px; }
+.resultMsg { font-size:13px; color:rgba(255,255,255,0.6); margin-top:10px; }
+
+.noInternet { position:fixed; top:0; left:0; right:0; background:#ff1744; color:#fff; text-align:center; padding:10px; font-weight:700; font-size:13px; display:none; z-index:200; }
+
+/* Ocultar elementos de html5-qrcode que no necesitamos */
+#reader__scan_region { flex:1; }
+#reader__dashboard { display:none !important; }
 </style>
 </head>
 <body>
-<div id="licenciaScreen">
-  <div style="font-size:56px;margin-bottom:16px">X</div>
-  <div class="licTitulo">LICENCIA VENCIDA</div>
-  <div class="licMsg" id="licMsg"></div>
-</div>
+
+<div class="noInternet" id="noInternet">SIN CONEXION - No se puede registrar</div>
+
+<!-- LOGIN -->
 <div id="loginScreen">
   <div class="logoTitle">ASIST<br>QR</div>
   <div class="logoSub">Control de Asistencia</div>
@@ -73,224 +70,193 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
     <label class="fieldLabel">Usuario</label>
     <input class="fieldInput" type="text" id="inpUsuario" autocomplete="username" autocapitalize="none" placeholder="usuario">
     <label class="fieldLabel">Contrasena</label>
-    <input class="fieldInput" type="password" id="inpClave" autocomplete="current-password" placeholder=".........">
+    <input class="fieldInput" type="password" id="inpClave" placeholder=".........">
     <button class="btnLogin" id="btnLogin">INGRESAR</button>
   </div>
 </div>
+
+<!-- SCANNER -->
 <div id="scannerScreen">
-  <div class="noInternet" id="noInternet">SIN CONEXION - No se puede registrar</div>
   <div class="scanHeader">
     <div class="scanHeaderInst" id="hdrInst">ASIST QR</div>
     <div class="scanHeaderUser"><b id="hdrNombre">---</b><span id="hdrRol"></span></div>
   </div>
-  <div class="cameraWrap">
-    <video id="video" autoplay playsinline muted webkit-playsinline></video>
-    <canvas id="canvas"></canvas>
-
-    <div class="resultOverlay" id="resultOverlay">
-      <div class="resultCard" id="resultCard">
-        <div class="resultEstado" id="resEstado">---</div>
-        <div class="resultId" id="resId">ID: ---</div>
-        <div class="resultHora" id="resHora">--:--:--</div>
-        <div class="resultTipo" id="resTipo">ENTRADA</div>
-        <div class="resultMsg" id="resMsg"></div>
-      </div>
-    </div>
-  </div>
+  <div id="reader"></div>
   <div class="scanFooter">
     <div class="footerStatus">Estado<b id="ftrStatus">Iniciando...</b></div>
     <div class="footerBtns">
-      <button class="btnIcon" id="btnRotar">ROTAR</button>
       <button class="btnIcon" id="btnSalir">SALIR</button>
     </div>
   </div>
 </div>
+
+<!-- RESULTADO -->
+<div class="resultOverlay" id="resultOverlay">
+  <div class="resultCard" id="resultCard">
+    <div class="resultEstado" id="resEstado">---</div>
+    <div class="resultId" id="resId">ID: ---</div>
+    <div class="resultHora" id="resHora">--:--:--</div>
+    <div class="resultTipo" id="resTipo">ENTRADA</div>
+    <div class="resultMsg" id="resMsg"></div>
+  </div>
+</div>
+
+<!-- Libreria html5-qrcode - mucho mas potente que jsQR -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script>
 var TOKEN = null;
-var ROTADO = false;
-var SCANNING = true;
 var ONLINE = navigator.onLine;
-var STREAM = null;
-var RAF_ID = null;
+var SCANNER = null;
 var ULTIMO_ID = null;
 var ULTIMO_TIME = 0;
 var TIMER_RES = null;
+var PROCESANDO = false;
 
 var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbztLf6CwY61Uu_nLi-w50Yf1cXjxO5hia_gWY3WEXRllwwfnE5JaGgwEAHWKXWn82QL/exec";
 
-function llamarServidor(accion, datos) {
-  var params = new URLSearchParams({ action: accion });
-  if (datos) {
-    Object.keys(datos).forEach(function(k) { params.append(k, datos[k]); });
-  }
-  return fetch(WEBAPP_URL + "?" + params.toString(), {
-    method: "GET",
-    redirect: "follow"
-  }).then(function(r) {
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    return r.json();
+// Sonidos
+function playTone(f,t,d,g,dl) {
+  try {
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    var o=ctx.createOscillator(),gain=ctx.createGain();
+    o.connect(gain);gain.connect(ctx.destination);
+    o.type=t;o.frequency.value=f;dl=dl||0;
+    gain.gain.setValueAtTime(g,ctx.currentTime+dl);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dl+d);
+    o.start(ctx.currentTime+dl);o.stop(ctx.currentTime+dl+d);
+  }catch(e){}
+}
+function sndPuntual(){playTone(880,"sine",0.15,0.3);playTone(1100,"sine",0.2,0.3,0.15);}
+function sndTarde(){playTone(440,"triangle",0.2,0.4);playTone(380,"triangle",0.3,0.3,0.2);}
+function sndError(){playTone(200,"sawtooth",0.15,0.4);playTone(150,"sawtooth",0.15,0.4,0.18);}
+
+// Internet
+function checkNet(){
+  ONLINE=navigator.onLine;
+  var el=document.getElementById("noInternet");
+  el.style.display=ONLINE?"none":"block";
+}
+window.addEventListener("online",checkNet);
+window.addEventListener("offline",checkNet);
+setInterval(checkNet,5000);
+
+// Servidor
+function llamarServidor(accion,datos){
+  var params=new URLSearchParams({action:accion});
+  if(datos) Object.keys(datos).forEach(function(k){params.append(k,datos[k]);});
+  return fetch(WEBAPP_URL+"?"+params.toString(),{method:"GET",redirect:"follow"})
+    .then(function(r){return r.json();});
+}
+
+// Inicializar
+window.onload=function(){
+  checkNet();
+  document.getElementById("btnLogin").addEventListener("click",handleLogin);
+  document.getElementById("inpClave").addEventListener("keydown",function(e){if(e.key==="Enter")handleLogin();});
+  document.getElementById("btnSalir").addEventListener("click",salir);
+  var t=sessionStorage.getItem("qr_token");
+  if(t){TOKEN=t;abrirScanner({nombre:sessionStorage.getItem("qr_nombre")||"",rol:sessionStorage.getItem("qr_rol")||"",institucion:sessionStorage.getItem("qr_inst")||"ASIST QR"});}
+};
+
+// Login
+function handleLogin(){
+  if(!ONLINE){mostrarLoginError("Sin conexion");return;}
+  var u=document.getElementById("inpUsuario").value.trim();
+  var p=document.getElementById("inpClave").value.trim();
+  if(!u||!p){mostrarLoginError("Ingresa usuario y contrasena");return;}
+  var btn=document.getElementById("btnLogin");
+  btn.disabled=true;btn.textContent="VERIFICANDO...";
+  llamarServidor("login",{usuario:u,clave:p})
+    .then(function(res){
+      btn.disabled=false;btn.textContent="INGRESAR";
+      if(!res.ok){mostrarLoginError(res.mensaje||"Error");sndError();return;}
+      TOKEN=res.token;
+      sessionStorage.setItem("qr_token",res.token);
+      sessionStorage.setItem("qr_nombre",res.nombre||"");
+      sessionStorage.setItem("qr_rol",res.rol||"");
+      sessionStorage.setItem("qr_inst",res.institucion||"ASIST QR");
+      abrirScanner(res);
+    })
+    .catch(function(){btn.disabled=false;btn.textContent="INGRESAR";mostrarLoginError("Error de conexion");sndError();});
+}
+
+function mostrarLoginError(msg){
+  var el=document.getElementById("loginError");
+  el.textContent=msg;el.style.display="block";
+}
+
+// Scanner
+function abrirScanner(datos){
+  document.getElementById("loginScreen").style.display="none";
+  document.getElementById("scannerScreen").style.display="flex";
+  document.getElementById("hdrInst").textContent=datos.institucion||"ASIST QR";
+  document.getElementById("hdrNombre").textContent=datos.nombre||"";
+  document.getElementById("hdrRol").textContent=datos.rol||"";
+  iniciarScanner();
+}
+
+function iniciarScanner(){
+  var st=document.getElementById("ftrStatus");
+  st.textContent="Iniciando camara...";
+
+  SCANNER = new Html5Qrcode("reader");
+  
+  var config = {
+    fps: 15,
+    qrbox: function(w,h){ return {width:Math.min(w,h)*0.8, height:Math.min(w,h)*0.8}; },
+    aspectRatio: window.innerHeight/window.innerWidth,
+    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+  };
+
+  // Camara frontal
+  SCANNER.start(
+    {facingMode: "user"},
+    config,
+    function(decodedText) {
+      onQRDetected(decodedText);
+    },
+    function(error) { /* ignorar errores de frame */ }
+  ).then(function(){
+    st.textContent="Escaneando...";
+  }).catch(function(err){
+    st.textContent="Error: "+err;
+    // Intentar con cualquier camara
+    SCANNER.start(
+      {facingMode: "environment"},
+      config,
+      function(decodedText){ onQRDetected(decodedText); },
+      function(){}
+    ).then(function(){ st.textContent="Escaneando..."; })
+    .catch(function(e){ st.textContent="Camara no disponible: "+e; });
   });
 }
 
-function playTone(f, t, d, g, delay) {
-  try {
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = t; osc.frequency.value = f;
-    var dl = delay || 0;
-    gain.gain.setValueAtTime(g, ctx.currentTime + dl);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dl + d);
-    osc.start(ctx.currentTime + dl);
-    osc.stop(ctx.currentTime + dl + d);
-  } catch(e) {}
-}
-function sndPuntual() { playTone(880,"sine",0.15,0.3,0); playTone(1100,"sine",0.2,0.3,0.15); }
-function sndTarde()   { playTone(440,"triangle",0.2,0.4,0); playTone(380,"triangle",0.3,0.3,0.2); }
-function sndError()   { playTone(200,"sawtooth",0.15,0.4,0); playTone(150,"sawtooth",0.15,0.4,0.18); }
-
-function checkNet() {
-  ONLINE = navigator.onLine;
-  var el = document.getElementById("noInternet");
-  var st = document.getElementById("ftrStatus");
-  if (!ONLINE) { el.style.display="block"; if(st) st.textContent="Sin conexion"; }
-  else { el.style.display="none"; if(st&&SCANNING) st.textContent="Escaneando..."; }
-}
-window.addEventListener("online", checkNet);
-window.addEventListener("offline", checkNet);
-setInterval(checkNet, 5000);
-
-window.onload = function() {
-  checkNet();
-  document.getElementById("btnLogin").addEventListener("click", handleLogin);
-  document.getElementById("inpClave").addEventListener("keydown", function(e) { if(e.key==="Enter") handleLogin(); });
-  document.getElementById("btnRotar").addEventListener("click", rotar);
-  document.getElementById("btnSalir").addEventListener("click", salir);
-  var t = sessionStorage.getItem("qr_token");
-  if (t) {
-    TOKEN = t;
-    abrirScanner({ nombre:sessionStorage.getItem("qr_nombre")||"", rol:sessionStorage.getItem("qr_rol")||"", institucion:sessionStorage.getItem("qr_inst")||"ASIST QR" });
-  }
-};
-
-function handleLogin() {
-  if (!ONLINE) { mostrarLoginError("Sin conexion a internet"); return; }
-  var usuario = document.getElementById("inpUsuario").value.trim();
-  var clave = document.getElementById("inpClave").value.trim();
-  if (!usuario || !clave) { mostrarLoginError("Ingresa usuario y contrasena"); return; }
-  var btn = document.getElementById("btnLogin");
-  btn.disabled = true; btn.textContent = "VERIFICANDO...";
-  llamarServidor("login", { usuario:usuario, clave:clave })
-    .then(function(res) {
-      btn.disabled=false; btn.textContent="INGRESAR";
-      if (!res.ok) {
-        if (res.tipo==="LICENCIA") { mostrarLicencia(res.mensaje); return; }
-        mostrarLoginError(res.mensaje||"Error de acceso"); sndError(); return;
-      }
-      TOKEN = res.token;
-      sessionStorage.setItem("qr_token", res.token);
-      sessionStorage.setItem("qr_nombre", res.nombre||"");
-      sessionStorage.setItem("qr_rol", res.rol||"");
-      sessionStorage.setItem("qr_inst", res.institucion||"ASIST QR");
-      abrirScanner(res);
+function onQRDetected(texto){
+  if(PROCESANDO) return;
+  var now=Date.now();
+  if(texto===ULTIMO_ID && now-ULTIMO_TIME<3000) return;
+  ULTIMO_ID=texto; ULTIMO_TIME=now;
+  if(!ONLINE){mostrarResultado({ok:false,mensaje:"Sin conexion"},texto);sndError();return;}
+  PROCESANDO=true;
+  document.getElementById("ftrStatus").textContent="Procesando...";
+  llamarServidor("escanear",{token:TOKEN,id:texto.trim()})
+    .then(function(res){
+      mostrarResultado(res,texto);
+      if(res.ok){
+        if(res.estado==="PUNTUAL") sndPuntual();
+        else if(res.estado==="TARDE") sndTarde();
+        else sndError();
+      } else sndError();
     })
-    .catch(function(err) {
-      btn.disabled=false; btn.textContent="INGRESAR";
-      mostrarLoginError("Error: "+(err.message||"desconocido")); sndError();
-    });
+    .catch(function(err){mostrarResultado({ok:false,mensaje:"Error: "+err.message},texto);sndError();});
 }
 
-function mostrarLoginError(msg) {
-  var el = document.getElementById("loginError");
-  el.textContent = msg; el.style.display = "block";
-}
-
-function mostrarLicencia(msg) {
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("licenciaScreen").style.display = "flex";
-  document.getElementById("licMsg").textContent = msg;
-  sndError();
-}
-
-function abrirScanner(datos) {
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("scannerScreen").style.display = "flex";
-  document.getElementById("hdrInst").textContent = datos.institucion||"ASIST QR";
-  document.getElementById("hdrNombre").textContent = datos.nombre||"";
-  document.getElementById("hdrRol").textContent = datos.rol||"";
-  iniciarCamara();
-  checkNet();
-}
-
-function iniciarCamara() {
-  var st = document.getElementById("ftrStatus");
-  st.textContent = "Iniciando camara...";
-  navigator.mediaDevices.getUserMedia({ video:{facingMode:"user", width:{ideal:1280}, height:{ideal:720}}, audio:false })
-    .then(function(stream) {
-      STREAM = stream;
-      var v = document.getElementById("video");
-      v.srcObject = stream; v.play();
-      st.textContent = "Escaneando...";
-      tickScan();
-    })
-    .catch(function(err) {
-      st.textContent = "Error: "+err.name;
-      navigator.mediaDevices.getUserMedia({ video:true, audio:false })
-        .then(function(stream) {
-          STREAM = stream;
-          var v = document.getElementById("video");
-          v.srcObject = stream; v.style.transform="none"; v.play();
-          st.textContent = "Escaneando...";
-          tickScan();
-        })
-        .catch(function() { st.textContent = "Camara no disponible"; });
-    });
-}
-
-function tickScan() {
-  RAF_ID = requestAnimationFrame(tickScan);
-  if (!SCANNING) return;
-  var v = document.getElementById("video");
-  var c = document.getElementById("canvas");
-  if (v.readyState !== v.HAVE_ENOUGH_DATA) return;
-  c.width = v.videoWidth;
-  c.height = v.videoHeight;
-  var ctx = c.getContext("2d", {willReadFrequently: true});
-  // Invertir horizontalmente en canvas para compensar espejo de camara frontal
-  ctx.translate(c.width, 0);
-  ctx.scale(-1, 1);
-  ctx.drawImage(v, 0, 0, c.width, c.height);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  var img = ctx.getImageData(0, 0, c.width, c.height);
-  var code = jsQR(img.data, img.width, img.height, {inversionAttempts:"attemptBoth"});
-  if (code && code.data) {
-    procesarQR(code.data.trim());
-  }
-}
-
-function procesarQR(id) {
-  if (!id) return;
-  var now = Date.now();
-  if (id===ULTIMO_ID && now-ULTIMO_TIME<3000) return;
-  ULTIMO_ID=id; ULTIMO_TIME=now;
-  if (!ONLINE) { mostrarResultado({ok:false,mensaje:"Sin conexion"}, id); sndError(); return; }
-  SCANNING = false;
-  document.getElementById("ftrStatus").textContent = "Procesando...";
-  llamarServidor("escanear", { token:TOKEN, id:id })
-    .then(function(res) {
-      mostrarResultado(res, id);
-      if (res.ok) { if(res.estado==="PUNTUAL") sndPuntual(); else if(res.estado==="TARDE") sndTarde(); else sndError(); }
-      else sndError();
-    })
-    .catch(function(err) { mostrarResultado({ok:false,mensaje:"Error: "+err.message}, id); sndError(); });
-}
-
-function mostrarResultado(res, id) {
+function mostrarResultado(res,id){
   var overlay=document.getElementById("resultOverlay");
   var card=document.getElementById("resultCard");
   card.className="resultCard";
-  if (res.ok) {
+  if(res.ok){
     var e=(res.estado||"").toUpperCase();
     document.getElementById("resEstado").textContent=e;
     document.getElementById("resId").textContent="ID: "+(res.id||id);
@@ -305,29 +271,25 @@ function mostrarResultado(res, id) {
     document.getElementById("resId").textContent="ID: "+(id||"---");
     document.getElementById("resHora").textContent=horaActual();
     document.getElementById("resTipo").textContent="ERROR";
-    document.getElementById("resMsg").textContent=res.mensaje||"Error desconocido";
+    document.getElementById("resMsg").textContent=res.mensaje||"Error";
     card.classList.add("error");
   }
   overlay.classList.add("show");
   clearTimeout(TIMER_RES);
-  TIMER_RES = setTimeout(function() {
+  TIMER_RES=setTimeout(function(){
     overlay.classList.remove("show");
-    SCANNING=true; ULTIMO_ID=null;
+    PROCESANDO=false;
+    ULTIMO_ID=null;
     document.getElementById("ftrStatus").textContent="Escaneando...";
-  }, 2500);
+  },2500);
 }
 
-function horaActual() { return new Date().toLocaleTimeString("es-PE",{hour12:false}); }
-function rotar() {
-  ROTADO=!ROTADO;
-  var v=document.getElementById("video");
-  v.style.transform=ROTADO?"rotate(180deg)":"none";
-}
-function salir() {
+function horaActual(){return new Date().toLocaleTimeString("es-PE",{hour12:false});}
+
+function salir(){
   if(!confirm("Cerrar sesion?")) return;
-  sessionStorage.clear(); TOKEN=null; SCANNING=false;
-  if(RAF_ID) cancelAnimationFrame(RAF_ID);
-  if(STREAM) STREAM.getTracks().forEach(function(t){t.stop();});
+  sessionStorage.clear();TOKEN=null;
+  if(SCANNER) SCANNER.stop().catch(function(){});
   document.getElementById("scannerScreen").style.display="none";
   document.getElementById("loginScreen").style.display="flex";
   document.getElementById("inpUsuario").value="";
