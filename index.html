@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Permissions-Policy" content="camera=*, microphone=()">
+<meta http-equiv="Feature-Policy" content="camera *">
+<title>Scanner QR - Asistencia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+#loginScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding:24px; background:radial-gradient(ellipse at top,#111827,#0d0d0d); }
+.logoTitle { font-size:52px; font-weight:900; color:#2979ff; letter-spacing:6px; text-align:center; line-height:1; }
+.logoSub { font-size:12px; color:#555; letter-spacing:3px; text-transform:uppercase; text-align:center; margin:8px 0 40px; }
+.loginBox { width:100%; max-width:340px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:16px; padding:28px 22px; }
+.fieldLabel { font-size:11px; color:#666; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; display:block; }
+.fieldInput { width:100%; background:#0d0d0d; border:1px solid #333; border-radius:8px; padding:14px; color:#f0f0f0; font-size:16px; margin-bottom:16px; outline:none; }
+.fieldInput:focus { border-color:#2979ff; }
+.btnLogin { width:100%; background:#2979ff; color:#fff; border:none; border-radius:8px; padding:16px; font-size:18px; font-weight:700; letter-spacing:2px; cursor:pointer; margin-top:4px; }
+.btnLogin:disabled { opacity:0.4; cursor:not-allowed; }
+.loginError { background:#3d0011; border:1px solid #ff1744; border-radius:8px; padding:12px; color:#ff1744; font-size:13px; text-align:center; margin-bottom:12px; display:none; }
+#scannerScreen { display:none; flex-direction:column; height:100vh; }
+.scanHeader { background:#1a1a1a; border-bottom:1px solid #2a2a2a; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.scanHeaderInst { color:#2979ff; font-weight:700; font-size:15px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.scanHeaderUser { font-size:11px; color:#555; text-align:right; }
+.scanHeaderUser b { display:block; color:#f0f0f0; font-size:13px; }
+.cameraWrap { position:relative; flex:1; background:#000; overflow:hidden; }
+#video { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+#canvas { display:none; }
+.qrFrame { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(260px,68vw); height:min(260px,68vw); pointer-events:none; }
+.qrCorner { position:absolute; width:36px; height:36px; border-color:#2979ff; border-style:solid; }
+.tl { top:0; left:0; border-width:4px 0 0 4px; border-radius:6px 0 0 0; }
+.tr { top:0; right:0; border-width:4px 4px 0 0; border-radius:0 6px 0 0; }
+.bl { bottom:0; left:0; border-width:0 0 4px 4px; border-radius:0 0 0 6px; }
+.br { bottom:0; right:0; border-width:0 4px 4px 0; border-radius:0 0 6px 0; }
+.scanLine { position:absolute; left:4px; right:4px; height:3px; background:linear-gradient(90deg,transparent,#2979ff,transparent); animation:scanAnim 2s ease-in-out infinite; }
+@keyframes scanAnim { 0%{top:4px} 100%{top:calc(100% - 7px)} }
+.noInternet { position:absolute; top:0; left:0; right:0; background:#ff1744; color:#fff; text-align:center; padding:10px; font-weight:700; font-size:13px; display:none; z-index:20; }
+.resultOverlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.15s; background:rgba(0,0,0,0.6); }
+.resultOverlay.show { opacity:1; }
+.resultCard { width:min(300px,88vw); border-radius:18px; padding:28px 20px; text-align:center; border:2px solid; }
+.resultCard.puntual { background:rgba(0,50,20,0.97); border-color:#00e676; box-shadow:0 0 50px rgba(0,230,118,0.3); }
+.resultCard.tarde { background:rgba(50,30,0,0.97); border-color:#ff9100; box-shadow:0 0 50px rgba(255,145,0,0.3); }
+.resultCard.falta { background:rgba(50,0,15,0.97); border-color:#ff1744; box-shadow:0 0 50px rgba(255,23,68,0.3); }
+.resultCard.error { background:rgba(20,20,20,0.97); border-color:#444; }
+.resultEstado { font-size:58px; font-weight:900; letter-spacing:4px; line-height:1; margin-bottom:10px; }
+.puntual .resultEstado { color:#00e676; }
+.tarde .resultEstado { color:#ff9100; }
+.falta .resultEstado { color:#ff1744; }
+.error .resultEstado { color:#666; font-size:42px; }
+.resultId { font-size:26px; font-weight:700; color:rgba(255,255,255,0.5); letter-spacing:3px; margin-bottom:4px; }
+.resultHora { font-size:15px; color:rgba(255,255,255,0.5); margin-bottom:8px; }
+.resultTipo { display:inline-block; font-size:11px; letter-spacing:2px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.4); }
+.resultMsg { font-size:13px; color:rgba(255,255,255,0.6); margin-top:10px; line-height:1.4; }
+.scanFooter { background:#1a1a1a; border-top:1px solid #2a2a2a; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.footerStatus { font-size:11px; color:#555; }
+.footerStatus b { display:block; font-size:13px; font-weight:600; color:#2979ff; }
+.footerBtns { display:flex; gap:8px; }
+.btnIcon { background:#0d0d0d; border:1px solid #2a2a2a; border-radius:8px; padding:9px 16px; color:#f0f0f0; font-size:14px; cursor:pointer; font-weight:600; }
+#licenciaScreen { display:none; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding:32px; text-align:center; background:#0d0d0d; }
+.licTitulo { font-size:32px; font-weight:900; color:#ff1744; letter-spacing:3px; margin-bottom:12px; }
+.licMsg { color:#666; line-height:1.6; max-width:280px; }
+</style>
+</head>
+<body>
+<div id="licenciaScreen">
+  <div style="font-size:56px;margin-bottom:16px">X</div>
+  <div class="licTitulo">LICENCIA VENCIDA</div>
+  <div class="licMsg" id="licMsg"></div>
+</div>
+<div id="loginScreen">
+  <div class="logoTitle">ASIST<br>QR</div>
+  <div class="logoSub">Control de Asistencia</div>
+  <div class="loginBox">
+    <div class="loginError" id="loginError"></div>
+    <label class="fieldLabel">Usuario</label>
+    <input class="fieldInput" type="text" id="inpUsuario" autocomplete="username" autocapitalize="none" placeholder="usuario">
+    <label class="fieldLabel">Contrasena</label>
+    <input class="fieldInput" type="password" id="inpClave" autocomplete="current-password" placeholder=".........">
+    <button class="btnLogin" id="btnLogin">INGRESAR</button>
+  </div>
+</div>
+<div id="scannerScreen">
+  <div class="noInternet" id="noInternet">SIN CONEXION - No se puede registrar</div>
+  <div class="scanHeader">
+    <div class="scanHeaderInst" id="hdrInst">ASIST QR</div>
+    <div class="scanHeaderUser"><b id="hdrNombre">---</b><span id="hdrRol"></span></div>
+  </div>
+  <div class="cameraWrap">
+    <video id="video" autoplay playsinline muted webkit-playsinline></video>
+    <canvas id="canvas"></canvas>
+    <div class="qrFrame">
+      <div class="qrCorner tl"></div>
+      <div class="qrCorner tr"></div>
+      <div class="qrCorner bl"></div>
+      <div class="qrCorner br"></div>
+      <div class="scanLine"></div>
+    </div>
+    <div class="resultOverlay" id="resultOverlay">
+      <div class="resultCard" id="resultCard">
+        <div class="resultEstado" id="resEstado">---</div>
+        <div class="resultId" id="resId">ID: ---</div>
+        <div class="resultHora" id="resHora">--:--:--</div>
+        <div class="resultTipo" id="resTipo">ENTRADA</div>
+        <div class="resultMsg" id="resMsg"></div>
+      </div>
+    </div>
+  </div>
+  <div class="scanFooter">
+    <div class="footerStatus">Estado<b id="ftrStatus">Iniciando...</b></div>
+    <div class="footerBtns">
+      <button class="btnIcon" id="btnRotar">ROTAR</button>
+      <button class="btnIcon" id="btnSalir">SALIR</button>
+    </div>
+  </div>
+</div>
+<script>
+var TOKEN = null;
+var ROTADO = false;
+var SCANNING = true;
+var ONLINE = navigator.onLine;
+var STREAM = null;
+var RAF_ID = null;
+var ULTIMO_ID = null;
+var ULTIMO_TIME = 0;
+var TIMER_RES = null;
+
+function llamarServidor(accion, datos) {
+  return new Promise(function(resolve, reject) {
+    var fn, args;
+    if (accion === "login") {
+      fn = "loginApp2";
+      args = [datos.usuario, datos.clave];
+    } else if (accion === "escanear") {
+      fn = "escanearQR";
+      args = [datos.token, datos.id];
+    } else {
+      fn = "verificarSesionApp2";
+      args = [datos.token];
+    }
+    google.script.run
+      .withSuccessHandler(function(res) { resolve(res); })
+      .withFailureHandler(function(err) { reject(err); })
+      [fn].apply(null, args);
+  });
+}
+
+function playTone(f, t, d, g, delay) {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = t; osc.frequency.value = f;
+    var dl = delay || 0;
+    gain.gain.setValueAtTime(g, ctx.currentTime + dl);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dl + d);
+    osc.start(ctx.currentTime + dl);
+    osc.stop(ctx.currentTime + dl + d);
+  } catch(e) {}
+}
+function sndPuntual() { playTone(880,"sine",0.15,0.3,0); playTone(1100,"sine",0.2,0.3,0.15); }
+function sndTarde()   { playTone(440,"triangle",0.2,0.4,0); playTone(380,"triangle",0.3,0.3,0.2); }
+function sndError()   { playTone(200,"sawtooth",0.15,0.4,0); playTone(150,"sawtooth",0.15,0.4,0.18); }
+
+function checkNet() {
+  ONLINE = navigator.onLine;
+  var el = document.getElementById("noInternet");
+  var st = document.getElementById("ftrStatus");
+  if (!ONLINE) { el.style.display="block"; if(st) st.textContent="Sin conexion"; }
+  else { el.style.display="none"; if(st&&SCANNING) st.textContent="Escaneando..."; }
+}
+window.addEventListener("online", checkNet);
+window.addEventListener("offline", checkNet);
+setInterval(checkNet, 5000);
+
+window.onload = function() {
+  checkNet();
+  document.getElementById("btnLogin").addEventListener("click", handleLogin);
+  document.getElementById("inpClave").addEventListener("keydown", function(e) { if(e.key==="Enter") handleLogin(); });
+  document.getElementById("btnRotar").addEventListener("click", rotar);
+  document.getElementById("btnSalir").addEventListener("click", salir);
+  var t = sessionStorage.getItem("qr_token");
+  if (t) {
+    TOKEN = t;
+    abrirScanner({ nombre:sessionStorage.getItem("qr_nombre")||"", rol:sessionStorage.getItem("qr_rol")||"", institucion:sessionStorage.getItem("qr_inst")||"ASIST QR" });
+  }
+};
+
+function handleLogin() {
+  if (!ONLINE) { mostrarLoginError("Sin conexion a internet"); return; }
+  var usuario = document.getElementById("inpUsuario").value.trim();
+  var clave = document.getElementById("inpClave").value.trim();
+  if (!usuario || !clave) { mostrarLoginError("Ingresa usuario y contrasena"); return; }
+  var btn = document.getElementById("btnLogin");
+  btn.disabled = true; btn.textContent = "VERIFICANDO...";
+  llamarServidor("login", { usuario:usuario, clave:clave })
+    .then(function(res) {
+      btn.disabled=false; btn.textContent="INGRESAR";
+      if (!res.ok) {
+        if (res.tipo==="LICENCIA") { mostrarLicencia(res.mensaje); return; }
+        mostrarLoginError(res.mensaje||"Error de acceso"); sndError(); return;
+      }
+      TOKEN = res.token;
+      sessionStorage.setItem("qr_token", res.token);
+      sessionStorage.setItem("qr_nombre", res.nombre||"");
+      sessionStorage.setItem("qr_rol", res.rol||"");
+      sessionStorage.setItem("qr_inst", res.institucion||"ASIST QR");
+      abrirScanner(res);
+    })
+    .catch(function(err) {
+      btn.disabled=false; btn.textContent="INGRESAR";
+      mostrarLoginError("Error: "+(err.message||"desconocido")); sndError();
+    });
+}
+
+function mostrarLoginError(msg) {
+  var el = document.getElementById("loginError");
+  el.textContent = msg; el.style.display = "block";
+}
+
+function mostrarLicencia(msg) {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("licenciaScreen").style.display = "flex";
+  document.getElementById("licMsg").textContent = msg;
+  sndError();
+}
+
+function abrirScanner(datos) {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("scannerScreen").style.display = "flex";
+  document.getElementById("hdrInst").textContent = datos.institucion||"ASIST QR";
+  document.getElementById("hdrNombre").textContent = datos.nombre||"";
+  document.getElementById("hdrRol").textContent = datos.rol||"";
+  iniciarCamara();
+  checkNet();
+}
+
+function iniciarCamara() {
+  var st = document.getElementById("ftrStatus");
+  st.textContent = "Iniciando camara...";
+  navigator.mediaDevices.getUserMedia({ video:{facingMode:"user"}, audio:false })
+    .then(function(stream) {
+      STREAM = stream;
+      var v = document.getElementById("video");
+      v.srcObject = stream; v.play();
+      st.textContent = "Escaneando...";
+      tickScan();
+    })
+    .catch(function(err) {
+      st.textContent = "Error: "+err.name;
+      navigator.mediaDevices.getUserMedia({ video:true, audio:false })
+        .then(function(stream) {
+          STREAM = stream;
+          var v = document.getElementById("video");
+          v.srcObject = stream; v.style.transform="none"; v.play();
+          st.textContent = "Escaneando...";
+          tickScan();
+        })
+        .catch(function() { st.textContent = "Camara no disponible"; });
+    });
+}
+
+function tickScan() {
+  RAF_ID = requestAnimationFrame(tickScan);
+  if (!SCANNING) return;
+  var v = document.getElementById("video");
+  var c = document.getElementById("canvas");
+  if (v.readyState !== v.HAVE_ENOUGH_DATA) return;
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  var ctx = c.getContext("2d");
+  ctx.drawImage(v,0,0,c.width,c.height);
+  var img = ctx.getImageData(0,0,c.width,c.height);
+  var code = jsQR(img.data,img.width,img.height,{inversionAttempts:"dontInvert"});
+  if (code && code.data) procesarQR(code.data.trim());
+}
+
+function procesarQR(id) {
+  if (!id) return;
+  var now = Date.now();
+  if (id===ULTIMO_ID && now-ULTIMO_TIME<3000) return;
+  ULTIMO_ID=id; ULTIMO_TIME=now;
+  if (!ONLINE) { mostrarResultado({ok:false,mensaje:"Sin conexion"}, id); sndError(); return; }
+  SCANNING = false;
+  document.getElementById("ftrStatus").textContent = "Procesando...";
+  llamarServidor("escanear", { token:TOKEN, id:id })
+    .then(function(res) {
+      mostrarResultado(res, id);
+      if (res.ok) { if(res.estado==="PUNTUAL") sndPuntual(); else if(res.estado==="TARDE") sndTarde(); else sndError(); }
+      else sndError();
+    })
+    .catch(function(err) { mostrarResultado({ok:false,mensaje:"Error: "+err.message}, id); sndError(); });
+}
+
+function mostrarResultado(res, id) {
+  var overlay=document.getElementById("resultOverlay");
+  var card=document.getElementById("resultCard");
+  card.className="resultCard";
+  if (res.ok) {
+    var e=(res.estado||"").toUpperCase();
+    document.getElementById("resEstado").textContent=e;
+    document.getElementById("resId").textContent="ID: "+(res.id||id);
+    document.getElementById("resHora").textContent=res.hora||horaActual();
+    document.getElementById("resTipo").textContent=res.tipo||"ENTRADA";
+    document.getElementById("resMsg").textContent=res.duplicado?"Registro duplicado":"";
+    if(e==="PUNTUAL") card.classList.add("puntual");
+    else if(e==="TARDE") card.classList.add("tarde");
+    else card.classList.add("falta");
+  } else {
+    document.getElementById("resEstado").textContent="ERROR";
+    document.getElementById("resId").textContent="ID: "+(id||"---");
+    document.getElementById("resHora").textContent=horaActual();
+    document.getElementById("resTipo").textContent="ERROR";
+    document.getElementById("resMsg").textContent=res.mensaje||"Error desconocido";
+    card.classList.add("error");
+  }
+  overlay.classList.add("show");
+  clearTimeout(TIMER_RES);
+  TIMER_RES = setTimeout(function() {
+    overlay.classList.remove("show");
+    SCANNING=true; ULTIMO_ID=null;
+    document.getElementById("ftrStatus").textContent="Escaneando...";
+  }, 2500);
+}
+
+function horaActual() { return new Date().toLocaleTimeString("es-PE",{hour12:false}); }
+function rotar() {
+  ROTADO=!ROTADO;
+  var v=document.getElementById("video");
+  v.style.transform=ROTADO?"scaleX(-1) rotate(180deg)":"scaleX(-1)";
+}
+function salir() {
+  if(!confirm("Cerrar sesion?")) return;
+  sessionStorage.clear(); TOKEN=null; SCANNING=false;
+  if(RAF_ID) cancelAnimationFrame(RAF_ID);
+  if(STREAM) STREAM.getTracks().forEach(function(t){t.stop();});
+  document.getElementById("scannerScreen").style.display="none";
+  document.getElementById("loginScreen").style.display="flex";
+  document.getElementById("inpUsuario").value="";
+  document.getElementById("inpClave").value="";
+  document.getElementById("loginError").style.display="none";
+}
+</script>
+</body>
+</html>
