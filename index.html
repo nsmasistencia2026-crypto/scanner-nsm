@@ -126,23 +126,19 @@ var ULTIMO_ID = null;
 var ULTIMO_TIME = 0;
 var TIMER_RES = null;
 
+var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbztLf6CwY61Uu_nLi-w50Yf1cXjxO5hia_gWY3WEXRllwwfnE5JaGgwEAHWKXWn82QL/exec";
+
 function llamarServidor(accion, datos) {
-  return new Promise(function(resolve, reject) {
-    var fn, args;
-    if (accion === "login") {
-      fn = "loginApp2";
-      args = [datos.usuario, datos.clave];
-    } else if (accion === "escanear") {
-      fn = "escanearQR";
-      args = [datos.token, datos.id];
-    } else {
-      fn = "verificarSesionApp2";
-      args = [datos.token];
-    }
-    google.script.run
-      .withSuccessHandler(function(res) { resolve(res); })
-      .withFailureHandler(function(err) { reject(err); })
-      [fn].apply(null, args);
+  var params = new URLSearchParams({ action: accion });
+  if (datos) {
+    Object.keys(datos).forEach(function(k) { params.append(k, datos[k]); });
+  }
+  return fetch(WEBAPP_URL + "?" + params.toString(), {
+    method: "GET",
+    redirect: "follow"
+  }).then(function(r) {
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
   });
 }
 
