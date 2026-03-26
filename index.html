@@ -7,7 +7,6 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
-
 #loginScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding:24px; background:radial-gradient(ellipse at top,#111827,#0d0d0d); }
 .logoTitle { font-size:52px; font-weight:900; color:#2979ff; letter-spacing:6px; text-align:center; line-height:1; }
 .logoSub { font-size:12px; color:#555; letter-spacing:3px; text-transform:uppercase; text-align:center; margin:8px 0 40px; }
@@ -18,64 +17,52 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
 .btnLogin { width:100%; background:#2979ff; color:#fff; border:none; border-radius:8px; padding:16px; font-size:18px; font-weight:700; letter-spacing:2px; cursor:pointer; }
 .btnLogin:disabled { opacity:0.4; }
 .loginError { background:#3d0011; border:1px solid #ff1744; border-radius:8px; padding:12px; color:#ff1744; font-size:13px; text-align:center; margin-bottom:12px; display:none; }
-
 #scannerScreen { display:none; flex-direction:column; height:100vh; }
-.scanHeader { background:#1a1a1a; border-bottom:1px solid #2a2a2a; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; z-index:10; }
+.scanHeader { background:#1a1a1a; border-bottom:1px solid #2a2a2a; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
 .scanHeaderInst { color:#2979ff; font-weight:700; font-size:15px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.scanHeaderUser { font-size:11px; color:#555; text-align:right; }
 .scanHeaderUser b { display:block; color:#f0f0f0; font-size:13px; }
-
-#reader { flex:1; width:100%; }
-
+.scanHeaderUser { font-size:11px; color:#555; text-align:right; }
+#reader { flex:1; width:100%; background:#000; }
 .scanFooter { background:#1a1a1a; border-top:1px solid #2a2a2a; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
 .footerStatus { font-size:11px; color:#555; }
 .footerStatus b { display:block; font-size:13px; font-weight:600; color:#2979ff; }
-.footerBtns { display:flex; gap:8px; }
 .btnIcon { background:#0d0d0d; border:1px solid #2a2a2a; border-radius:8px; padding:9px 16px; color:#f0f0f0; font-size:14px; cursor:pointer; font-weight:600; }
-
-.resultOverlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.15s; background:rgba(0,0,0,0.85); z-index:100; }
-.resultOverlay.show { opacity:1; }
+.resultOverlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.15s; background:rgba(0,0,0,0.85); z-index:999; }
+.resultOverlay.show { opacity:1; pointer-events:all; }
 .resultCard { width:min(300px,88vw); border-radius:18px; padding:28px 20px; text-align:center; border:2px solid; }
-.resultCard.puntual { background:rgba(0,50,20,0.97); border-color:#00e676; box-shadow:0 0 50px rgba(0,230,118,0.3); }
-.resultCard.tarde { background:rgba(50,30,0,0.97); border-color:#ff9100; box-shadow:0 0 50px rgba(255,145,0,0.3); }
-.resultCard.falta { background:rgba(50,0,15,0.97); border-color:#ff1744; box-shadow:0 0 50px rgba(255,23,68,0.3); }
+.resultCard.puntual { background:rgba(0,50,20,0.97); border-color:#00e676; }
+.resultCard.tarde { background:rgba(50,30,0,0.97); border-color:#ff9100; }
+.resultCard.falta { background:rgba(50,0,15,0.97); border-color:#ff1744; }
 .resultCard.error { background:rgba(20,20,20,0.97); border-color:#444; }
 .resultEstado { font-size:58px; font-weight:900; letter-spacing:4px; line-height:1; margin-bottom:10px; }
 .puntual .resultEstado { color:#00e676; }
 .tarde .resultEstado { color:#ff9100; }
 .falta .resultEstado { color:#ff1744; }
 .error .resultEstado { color:#666; font-size:36px; }
-.resultId { font-size:26px; font-weight:700; color:rgba(255,255,255,0.5); letter-spacing:3px; margin-bottom:4px; }
+.resultId { font-size:26px; font-weight:700; color:rgba(255,255,255,0.5); margin-bottom:4px; }
 .resultHora { font-size:15px; color:rgba(255,255,255,0.5); margin-bottom:8px; }
-.resultTipo { display:inline-block; font-size:11px; letter-spacing:2px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.4); }
+.resultTipo { display:inline-block; font-size:11px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.4); }
 .resultMsg { font-size:13px; color:rgba(255,255,255,0.6); margin-top:10px; }
-
-.noInternet { position:fixed; top:0; left:0; right:0; background:#ff1744; color:#fff; text-align:center; padding:10px; font-weight:700; font-size:13px; display:none; z-index:200; }
-
-/* Ocultar elementos de html5-qrcode que no necesitamos */
-#reader__scan_region { flex:1; }
-#reader__dashboard { display:none !important; }
+.noInternet { position:fixed; top:0; left:0; right:0; background:#ff1744; color:#fff; text-align:center; padding:10px; font-weight:700; font-size:13px; display:none; z-index:9999; }
 </style>
 </head>
 <body>
 
-<div class="noInternet" id="noInternet">SIN CONEXION - No se puede registrar</div>
+<div class="noInternet" id="noInternet">SIN CONEXION</div>
 
-<!-- LOGIN -->
 <div id="loginScreen">
   <div class="logoTitle">ASIST<br>QR</div>
   <div class="logoSub">Control de Asistencia</div>
   <div class="loginBox">
     <div class="loginError" id="loginError"></div>
     <label class="fieldLabel">Usuario</label>
-    <input class="fieldInput" type="text" id="inpUsuario" autocomplete="username" autocapitalize="none" placeholder="usuario">
+    <input class="fieldInput" type="text" id="inpUsuario" autocapitalize="none" placeholder="usuario">
     <label class="fieldLabel">Contrasena</label>
     <input class="fieldInput" type="password" id="inpClave" placeholder=".........">
     <button class="btnLogin" id="btnLogin">INGRESAR</button>
   </div>
 </div>
 
-<!-- SCANNER -->
 <div id="scannerScreen">
   <div class="scanHeader">
     <div class="scanHeaderInst" id="hdrInst">ASIST QR</div>
@@ -90,7 +77,6 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
   </div>
 </div>
 
-<!-- RESULTADO -->
 <div class="resultOverlay" id="resultOverlay">
   <div class="resultCard" id="resultCard">
     <div class="resultEstado" id="resEstado">---</div>
@@ -101,91 +87,82 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
   </div>
 </div>
 
-<!-- Libreria html5-qrcode - mucho mas potente que jsQR -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 var TOKEN = null;
 var ONLINE = navigator.onLine;
-var SCANNER = null;
+var html5QrcodeScanner = null;
+var PROCESANDO = false;
 var ULTIMO_ID = null;
 var ULTIMO_TIME = 0;
 var TIMER_RES = null;
-var PROCESANDO = false;
 
 var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbztLf6CwY61Uu_nLi-w50Yf1cXjxO5hia_gWY3WEXRllwwfnE5JaGgwEAHWKXWn82QL/exec";
 
-// Sonidos
-function playTone(f,t,d,g,dl) {
-  try {
-    var ctx=new(window.AudioContext||window.webkitAudioContext)();
-    var o=ctx.createOscillator(),gain=ctx.createGain();
-    o.connect(gain);gain.connect(ctx.destination);
+function playTone(f,t,d,g,dl){
+  try{
+    var c=new(window.AudioContext||window.webkitAudioContext)();
+    var o=c.createOscillator(),gn=c.createGain();
+    o.connect(gn);gn.connect(c.destination);
     o.type=t;o.frequency.value=f;dl=dl||0;
-    gain.gain.setValueAtTime(g,ctx.currentTime+dl);
-    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dl+d);
-    o.start(ctx.currentTime+dl);o.stop(ctx.currentTime+dl+d);
+    gn.gain.setValueAtTime(g,c.currentTime+dl);
+    gn.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dl+d);
+    o.start(c.currentTime+dl);o.stop(c.currentTime+dl+d);
   }catch(e){}
 }
-function sndPuntual(){playTone(880,"sine",0.15,0.3);playTone(1100,"sine",0.2,0.3,0.15);}
-function sndTarde(){playTone(440,"triangle",0.2,0.4);playTone(380,"triangle",0.3,0.3,0.2);}
-function sndError(){playTone(200,"sawtooth",0.15,0.4);playTone(150,"sawtooth",0.15,0.4,0.18);}
+function sndPuntual(){playTone(880,"sine",0.2,0.4);playTone(1100,"sine",0.2,0.3,0.2);}
+function sndTarde(){playTone(440,"triangle",0.3,0.5);playTone(350,"triangle",0.3,0.3,0.3);}
+function sndError(){playTone(200,"sawtooth",0.2,0.5);playTone(150,"sawtooth",0.2,0.4,0.2);}
 
-// Internet
 function checkNet(){
   ONLINE=navigator.onLine;
-  var el=document.getElementById("noInternet");
-  el.style.display=ONLINE?"none":"block";
+  document.getElementById("noInternet").style.display=ONLINE?"none":"block";
 }
 window.addEventListener("online",checkNet);
 window.addEventListener("offline",checkNet);
 setInterval(checkNet,5000);
 
-// Servidor
 function llamarServidor(accion,datos){
-  var params=new URLSearchParams({action:accion});
-  if(datos) Object.keys(datos).forEach(function(k){params.append(k,datos[k]);});
-  return fetch(WEBAPP_URL+"?"+params.toString(),{method:"GET",redirect:"follow"})
-    .then(function(r){return r.json();});
+  var p=new URLSearchParams({action:accion});
+  if(datos) Object.keys(datos).forEach(function(k){p.append(k,datos[k]);});
+  return fetch(WEBAPP_URL+"?"+p.toString()).then(function(r){return r.json();});
 }
 
-// Inicializar
 window.onload=function(){
   checkNet();
-  document.getElementById("btnLogin").addEventListener("click",handleLogin);
-  document.getElementById("inpClave").addEventListener("keydown",function(e){if(e.key==="Enter")handleLogin();});
-  document.getElementById("btnSalir").addEventListener("click",salir);
+  document.getElementById("btnLogin").onclick=handleLogin;
+  document.getElementById("inpClave").onkeydown=function(e){if(e.key==="Enter")handleLogin();};
+  document.getElementById("btnSalir").onclick=salir;
   var t=sessionStorage.getItem("qr_token");
-  if(t){TOKEN=t;abrirScanner({nombre:sessionStorage.getItem("qr_nombre")||"",rol:sessionStorage.getItem("qr_rol")||"",institucion:sessionStorage.getItem("qr_inst")||"ASIST QR"});}
+  if(t){TOKEN=t;abrirScanner({nombre:sessionStorage.getItem("qr_nombre")||"",rol:sessionStorage.getItem("qr_rol")||"",institucion:sessionStorage.getItem("qr_inst")||""});}
 };
 
-// Login
 function handleLogin(){
-  if(!ONLINE){mostrarLoginError("Sin conexion");return;}
+  if(!ONLINE){mostrarError("Sin conexion");return;}
   var u=document.getElementById("inpUsuario").value.trim();
   var p=document.getElementById("inpClave").value.trim();
-  if(!u||!p){mostrarLoginError("Ingresa usuario y contrasena");return;}
+  if(!u||!p){mostrarError("Ingresa usuario y contrasena");return;}
   var btn=document.getElementById("btnLogin");
   btn.disabled=true;btn.textContent="VERIFICANDO...";
   llamarServidor("login",{usuario:u,clave:p})
     .then(function(res){
       btn.disabled=false;btn.textContent="INGRESAR";
-      if(!res.ok){mostrarLoginError(res.mensaje||"Error");sndError();return;}
+      if(!res.ok){mostrarError(res.mensaje||"Error");sndError();return;}
       TOKEN=res.token;
       sessionStorage.setItem("qr_token",res.token);
       sessionStorage.setItem("qr_nombre",res.nombre||"");
       sessionStorage.setItem("qr_rol",res.rol||"");
-      sessionStorage.setItem("qr_inst",res.institucion||"ASIST QR");
+      sessionStorage.setItem("qr_inst",res.institucion||"");
       abrirScanner(res);
     })
-    .catch(function(){btn.disabled=false;btn.textContent="INGRESAR";mostrarLoginError("Error de conexion");sndError();});
+    .catch(function(){btn.disabled=false;btn.textContent="INGRESAR";mostrarError("Error de conexion");sndError();});
 }
 
-function mostrarLoginError(msg){
+function mostrarError(msg){
   var el=document.getElementById("loginError");
   el.textContent=msg;el.style.display="block";
 }
 
-// Scanner
 function abrirScanner(datos){
   document.getElementById("loginScreen").style.display="none";
   document.getElementById("scannerScreen").style.display="flex";
@@ -197,46 +174,42 @@ function abrirScanner(datos){
 
 function iniciarScanner(){
   var st=document.getElementById("ftrStatus");
-  st.textContent="Iniciando camara...";
+  st.textContent="Iniciando...";
 
-  SCANNER = new Html5Qrcode("reader");
-  
-  var config = {
-    fps: 15,
-    qrbox: function(w,h){ return {width:Math.min(w,h)*0.8, height:Math.min(w,h)*0.8}; },
-    aspectRatio: window.innerHeight/window.innerWidth,
-    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-    experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-  };
+  // Usar Html5QrcodeScanner que es mas simple y confiable
+  html5QrcodeScanner = new Html5QrcodeScanner(
+    "reader",
+    {
+      fps: 10,
+      qrbox: function(viewfinderWidth, viewfinderHeight) {
+        var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        return { width: Math.floor(minEdge * 0.95), height: Math.floor(minEdge * 0.95) };
+      },
+      rememberLastUsedCamera: false,
+      aspectRatio: 1.0,
+      showTorchButtonIfSupported: true
+    },
+    false
+  );
 
-  // Camara frontal
-  SCANNER.start(
-    {facingMode: "user"},
-    config,
-    function(decodedText) {
+  html5QrcodeScanner.render(
+    function(decodedText, decodedResult) {
       onQRDetected(decodedText);
     },
-    function(error) { /* ignorar errores de frame */ }
-  ).then(function(){
-    st.textContent="Escaneando...";
-  }).catch(function(err){
-    st.textContent="Error: "+err;
-    // Intentar con cualquier camara
-    SCANNER.start(
-      {facingMode: "environment"},
-      config,
-      function(decodedText){ onQRDetected(decodedText); },
-      function(){}
-    ).then(function(){ st.textContent="Escaneando..."; })
-    .catch(function(e){ st.textContent="Camara no disponible: "+e; });
-  });
+    function(error) {
+      // ignorar errores de frame
+    }
+  );
+
+  st.textContent="Escaneando...";
 }
 
 function onQRDetected(texto){
   if(PROCESANDO) return;
   var now=Date.now();
   if(texto===ULTIMO_ID && now-ULTIMO_TIME<3000) return;
-  ULTIMO_ID=texto; ULTIMO_TIME=now;
+  ULTIMO_ID=texto;
+  ULTIMO_TIME=now;
   if(!ONLINE){mostrarResultado({ok:false,mensaje:"Sin conexion"},texto);sndError();return;}
   PROCESANDO=true;
   document.getElementById("ftrStatus").textContent="Procesando...";
@@ -249,7 +222,10 @@ function onQRDetected(texto){
         else sndError();
       } else sndError();
     })
-    .catch(function(err){mostrarResultado({ok:false,mensaje:"Error: "+err.message},texto);sndError();});
+    .catch(function(err){
+      mostrarResultado({ok:false,mensaje:"Error conexion"},texto);
+      sndError();
+    });
 }
 
 function mostrarResultado(res,id){
@@ -260,16 +236,14 @@ function mostrarResultado(res,id){
     var e=(res.estado||"").toUpperCase();
     document.getElementById("resEstado").textContent=e;
     document.getElementById("resId").textContent="ID: "+(res.id||id);
-    document.getElementById("resHora").textContent=res.hora||horaActual();
+    document.getElementById("resHora").textContent=res.hora||hora();
     document.getElementById("resTipo").textContent=res.tipo||"ENTRADA";
     document.getElementById("resMsg").textContent=res.duplicado?"Registro duplicado":"";
-    if(e==="PUNTUAL") card.classList.add("puntual");
-    else if(e==="TARDE") card.classList.add("tarde");
-    else card.classList.add("falta");
+    card.classList.add(e==="PUNTUAL"?"puntual":e==="TARDE"?"tarde":"falta");
   } else {
     document.getElementById("resEstado").textContent="ERROR";
     document.getElementById("resId").textContent="ID: "+(id||"---");
-    document.getElementById("resHora").textContent=horaActual();
+    document.getElementById("resHora").textContent=hora();
     document.getElementById("resTipo").textContent="ERROR";
     document.getElementById("resMsg").textContent=res.mensaje||"Error";
     card.classList.add("error");
@@ -284,12 +258,12 @@ function mostrarResultado(res,id){
   },2500);
 }
 
-function horaActual(){return new Date().toLocaleTimeString("es-PE",{hour12:false});}
+function hora(){return new Date().toLocaleTimeString("es-PE",{hour12:false});}
 
 function salir(){
   if(!confirm("Cerrar sesion?")) return;
   sessionStorage.clear();TOKEN=null;
-  if(SCANNER) SCANNER.stop().catch(function(){});
+  if(html5QrcodeScanner) html5QrcodeScanner.clear().catch(function(){});
   document.getElementById("scannerScreen").style.display="none";
   document.getElementById("loginScreen").style.display="flex";
   document.getElementById("inpUsuario").value="";
