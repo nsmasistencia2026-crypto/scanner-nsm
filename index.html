@@ -185,30 +185,57 @@ function iniciarScanner(){
   st.textContent="Iniciando...";
 
   // Usar Html5QrcodeScanner que es mas simple y confiable
-  html5QrcodeScanner = new Html5QrcodeScanner(
-    "reader",
-    {
-      fps: 10,
-      qrbox: function(viewfinderWidth, viewfinderHeight) {
-        return { width: Math.floor(viewfinderWidth * 0.95), height: Math.floor(viewfinderHeight * 0.95) };
-      },
-      rememberLastUsedCamera: false,
-      aspectRatio: 1.0,
-      showTorchButtonIfSupported: true
-    },
-    false
-  );
-
-  html5QrcodeScanner.render(
-    function(decodedText, decodedResult) {
-      onQRDetected(decodedText);
-    },
-    function(error) {
-      // ignorar errores de frame
+  // Usar Html5Qrcode directamente para control total
+  var html5Qrcode = new Html5Qrcode("reader");
+  
+  Html5Qrcode.getCameras().then(function(cameras) {
+    if (!cameras || cameras.length === 0) {
+      st.textContent = "No se encontro camara";
+      return;
     }
-  );
+    
+    // Preferir camara frontal
+    var cameraId = cameras[0].id;
+    for (var i = 0; i < cameras.length; i++) {
+      if (cameras[i].label && cameras[i].label.toLowerCase().indexOf("front") >= 0) {
+        cameraId = cameras[i].id;
+        break;
+      }
+    }
 
-  st.textContent="Escaneando...";
+    var config = {
+      fps: 15,
+      qrbox: function(w, h) {
+        return { width: Math.floor(w * 0.9), height: Math.floor(h * 0.9) };
+      },
+      aspectRatio: window.screen.height / window.screen.width
+    };
+
+    html5Qrcode.start(
+      cameraId,
+      config,
+      function(decodedText) { onQRDetected(decodedText); },
+      function() {}
+    ).then(function() {
+      st.textContent = "Escaneando...";
+      html5QrcodeScanner = html5Qrcode;
+    }).catch(function(err) {
+      // Si falla con camara especifica, usar facingMode
+      html5Qrcode.start(
+        { facingMode: "user" },
+        config,
+        function(decodedText) { onQRDetected(decodedText); },
+        function() {}
+      ).then(function() {
+        st.textContent = "Escaneando...";
+        html5QrcodeScanner = html5Qrcode;
+      }).catch(function(e) {
+        st.textContent = "Error camara: " + e;
+      });
+    });
+  }).catch(function(err) {
+    st.textContent = "Error: " + err;
+  });
 }
 
 function onQRDetected(texto){
