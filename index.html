@@ -6,6 +6,12 @@
 <title>Scanner QR - Asistencia</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
+/* Forzar pantalla completa en tableta */
+html, body { width:100%; height:100%; }
+/* Landscape mode */
+@media (orientation: landscape) {
+  #reader { height: calc(100vh - 100px) !important; }
+}
 body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
 #loginScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding:24px; background:radial-gradient(ellipse at top,#111827,#0d0d0d); }
 .logoTitle { font-size:52px; font-weight:900; color:#2979ff; letter-spacing:6px; text-align:center; line-height:1; }
@@ -72,6 +78,7 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
   <div class="scanFooter">
     <div class="footerStatus">Estado<b id="ftrStatus">Iniciando...</b></div>
     <div class="footerBtns">
+      <button class="btnIcon" id="btnRotar">ROTAR</button>
       <button class="btnIcon" id="btnSalir">SALIR</button>
     </div>
   </div>
@@ -133,6 +140,7 @@ window.onload=function(){
   document.getElementById("btnLogin").onclick=handleLogin;
   document.getElementById("inpClave").onkeydown=function(e){if(e.key==="Enter")handleLogin();};
   document.getElementById("btnSalir").onclick=salir;
+  document.getElementById("btnRotar").onclick=rotarPantalla;
   var t=sessionStorage.getItem("qr_token");
   if(t){TOKEN=t;abrirScanner({nombre:sessionStorage.getItem("qr_nombre")||"",rol:sessionStorage.getItem("qr_rol")||"",institucion:sessionStorage.getItem("qr_inst")||""});}
 };
@@ -182,8 +190,7 @@ function iniciarScanner(){
     {
       fps: 10,
       qrbox: function(viewfinderWidth, viewfinderHeight) {
-        var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-        return { width: Math.floor(minEdge * 0.95), height: Math.floor(minEdge * 0.95) };
+        return { width: Math.floor(viewfinderWidth * 0.95), height: Math.floor(viewfinderHeight * 0.95) };
       },
       rememberLastUsedCamera: false,
       aspectRatio: 1.0,
@@ -259,6 +266,24 @@ function mostrarResultado(res,id){
 }
 
 function hora(){return new Date().toLocaleTimeString("es-PE",{hour12:false});}
+
+function rotarPantalla(){
+  var body = document.body;
+  var current = body.style.transform;
+  if(current === "rotate(90deg) translateY(-100%)") {
+    body.style.transform = "";
+    body.style.transformOrigin = "";
+    body.style.width = "";
+    body.style.height = "";
+    body.style.position = "";
+  } else {
+    body.style.transform = "rotate(90deg) translateY(-100%)";
+    body.style.transformOrigin = "top left";
+    body.style.width = "100vh";
+    body.style.height = "100vw";
+    body.style.position = "absolute";
+  }
+}
 
 function salir(){
   if(!confirm("Cerrar sesion?")) return;
