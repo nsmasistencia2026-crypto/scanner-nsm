@@ -274,7 +274,9 @@ function onQRDetected(texto){
             if(res.estado==="PUNTUAL") sndPuntual();
             else if(res.estado==="TARDE") sndTarde();
             else sndError();
-          } else sndError();
+          } else {
+            sndError();
+          }
         }
       })
       .catch(function(err) {
@@ -298,11 +300,12 @@ function mostrarResultado(res,id){
     document.getElementById("resMsg").textContent=res.duplicado?"Registro duplicado":"";
     card.classList.add(e==="PUNTUAL"?"puntual":e==="TARDE"?"tarde":"falta");
   } else {
-    document.getElementById("resEstado").textContent="ERROR";
-    document.getElementById("resId").textContent="ID: "+(id||"---");
-    document.getElementById("resHora").textContent=hora();
-    document.getElementById("resTipo").textContent="ERROR";
-    document.getElementById("resMsg").textContent=res.mensaje||"Error";
+    var tipoError = (res.tipo === "FUERA_HORARIO") ? "FUERA DE HORARIO" : "ERROR";
+    document.getElementById("resEstado").textContent = tipoError;
+    document.getElementById("resId").textContent = "ID: "+(id||"---");
+    document.getElementById("resHora").textContent = hora();
+    document.getElementById("resTipo").textContent = res.tipo||"ERROR";
+    document.getElementById("resMsg").textContent = res.mensaje||"Error";
     card.classList.add("error");
   }
   overlay.classList.add("show");
