@@ -246,45 +246,41 @@ function onQRDetected(texto){
   if(texto===ULTIMO_ID && now-ULTIMO_TIME<3000) return;
   ULTIMO_ID=texto;
   ULTIMO_TIME=now;
-  if(!ONLINE){mostrarResultado({ok:false,mensaje:"Sin conexion"},texto);sndError();return;}
+  if(!ONLINE){mostrarResultado({ok:false,tipo:"ERROR",mensaje:"Sin conexion"},texto);sndError();return;}
   PROCESANDO=true;
   document.getElementById("ftrStatus").textContent="Procesando...";
-  // Si el token expiro, re-login automatico
-  function ejecutarEscaneo(token) {
-    llamarServidor("escanear", {token: token, id: texto.trim()})
-      .then(function(res) {
-        if (!res.ok && (res.mensaje === "Sesion no valida o expirada" || res.mensaje === "Sin token de sesion")) {
-          // Re-login automatico
-          var u = sessionStorage.getItem("qr_usuario");
-          var p = sessionStorage.getItem("qr_clave");
-          llamarServidor("login", {usuario: u, clave: p})
-            .then(function(loginRes) {
-              if (loginRes.ok) {
-                TOKEN = loginRes.token;
-                sessionStorage.setItem("qr_token", loginRes.token);
-                ejecutarEscaneo(loginRes.token);
-              } else {
-                mostrarResultado({ok:false, mensaje:"Sesion expirada. Reinicia la app."}, texto);
-                sndError();
-              }
-            });
-        } else {
-          mostrarResultado(res, texto);
-          if(res.ok) {
-            if(res.estado==="PUNTUAL") sndPuntual();
-            else if(res.estado==="TARDE") sndTarde();
-            else sndError();
-          } else {
-            sndError();
-          }
-        }
-      })
-      .catch(function(err) {
-        mostrarResultado({ok:false, mensaje:"Error conexion"}, texto);
+
+  var u = sessionStorage.getItem("qr_usuario");
+  var p = sessionStorage.getItem("qr_clave");
+
+  // Siempre hacer login fresco antes de escanear para garantizar token valido
+  llamarServidor("login", {usuario: u, clave: p})
+    .then(function(loginRes) {
+      if (!loginRes.ok) {
+        mostrarResultado({ok:false, tipo:"ERROR", mensaje:"Error de sesion. Reinicia la app."}, texto);
         sndError();
-      });
-  }
-  ejecutarEscaneo(TOKEN);
+        return;
+      }
+      TOKEN = loginRes.token;
+      sessionStorage.setItem("qr_token", loginRes.token);
+      // Ahora escanear con token fresco
+      return llamarServidor("escanear", {token: TOKEN, id: texto.trim()});
+    })
+    .then(function(res) {
+      if (!res) return;
+      mostrarResultado(res, texto);
+      if(res.ok) {
+        if(res.estado==="PUNTUAL") sndPuntual();
+        else if(res.estado==="TARDE") sndTarde();
+        else sndError();
+      } else {
+        sndError();
+      }
+    })
+    .catch(function(err) {
+      mostrarResultado({ok:false, tipo:"ERROR", mensaje:"Error: "+err.message}, texto);
+      sndError();
+    });
 }
 
 function mostrarResultado(res,id){
