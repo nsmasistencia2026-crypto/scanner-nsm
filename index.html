@@ -132,13 +132,8 @@ setInterval(checkNet,5000);
 function llamarServidor(accion,datos){
   var p=new URLSearchParams({action:accion});
   if(datos) Object.keys(datos).forEach(function(k){p.append(k,datos[k]);});
-  // Cache busting para evitar respuestas cacheadas
-  p.append("_t", Date.now());
-  return fetch(WEBAPP_URL+"?"+p.toString(), {
-    method: "GET",
-    cache: "no-store",
-    headers: {"Cache-Control": "no-cache, no-store, must-revalidate"}
-  }).then(function(r){ return r.json(); });
+  return fetch(WEBAPP_URL+"?"+p.toString())
+    .then(function(r){ return r.json(); });
 }
 
 window.onload=function(){
