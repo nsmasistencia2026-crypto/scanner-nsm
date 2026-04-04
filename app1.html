@@ -619,7 +619,9 @@ function buscarEstudianteConId(id) {
     })
     .then(function(res) {
       if (!res.ok) {
-        document.getElementById('fichaEstudiante').innerHTML = '<div class="alert alert-error">'+res.mensaje+'</div>';
+        document.getElementById('fichaEstudiante').innerHTML = 
+          '<div class="alert alert-error">'+res.mensaje+'</div>'+
+          '<button class="btnBuscar" style="margin-top:12px" onclick="nuevaBusquedaEstudiante()">🔍 Nueva Busqueda</button>';
         return;
       }
       var e = res.estudiante;
@@ -642,6 +644,9 @@ function buscarEstudianteConId(id) {
           statCard(r.tardanzas||0,'Tardanzas','naranja')+
           statCard(r.faltas||0,'Faltas','rojo')+
           statCard(r.totalJustificaciones||0,'Justificaciones','azul')+
+        '</div>'+
+        '<div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee">'+
+          '<button class="btnBuscar" onclick="nuevaBusquedaEstudiante()">🔍 Nueva Busqueda</button>'+
         '</div>';
       document.getElementById('fichaEstudiante').innerHTML = html;
     })
