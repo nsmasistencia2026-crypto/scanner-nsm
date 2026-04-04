@@ -28,7 +28,7 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
 .scanHeaderInst { color:#2979ff; font-weight:700; font-size:15px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .scanHeaderUser b { display:block; color:#f0f0f0; font-size:13px; }
 .scanHeaderUser { font-size:11px; color:#555; text-align:right; }
-#reader { flex:1; width:100%; background:#000; }
+#reader { flex:1; width:100%; background:#000; min-height:300px; }
 .scanFooter { background:#1a1a1a; border-top:1px solid #2a2a2a; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
 .footerStatus { font-size:11px; color:#555; }
 .footerStatus b { display:block; font-size:13px; font-weight:600; color:#2979ff; }
@@ -74,7 +74,7 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
     <div class="scanHeaderInst" id="hdrInst">ASIST QR</div>
     <div class="scanHeaderUser"><b id="hdrNombre">---</b><span id="hdrRol"></span></div>
   </div>
-  <div id="reader"></div>
+  <div id="reader" style="width:100%;flex:1;min-height:300px;background:#000"></div>
   <div class="scanFooter">
     <div class="footerStatus">Estado<b id="ftrStatus">Iniciando...</b></div>
     <div class="footerBtns">
