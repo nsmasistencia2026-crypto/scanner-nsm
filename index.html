@@ -184,60 +184,37 @@ function abrirScanner(datos){
 }
 
 function iniciarScanner(){
-  var st=document.getElementById("ftrStatus");
-  st.textContent="Iniciando...";
+  var st = document.getElementById("ftrStatus");
+  st.textContent = "Iniciando camara...";
 
-  // Usar Html5QrcodeScanner que es mas simple y confiable
-  // Usar Html5Qrcode directamente para control total
-  var html5Qrcode = new Html5Qrcode("reader");
-  
+  html5QrcodeScanner = new Html5Qrcode("reader");
+
   Html5Qrcode.getCameras().then(function(cameras) {
     if (!cameras || cameras.length === 0) {
       st.textContent = "No se encontro camara";
       return;
     }
-    
-    // Preferir camara frontal
-    var cameraId = cameras[0].id;
-    for (var i = 0; i < cameras.length; i++) {
-      if (cameras[i].label && cameras[i].label.toLowerCase().indexOf("front") >= 0) {
-        cameraId = cameras[i].id;
-        break;
-      }
-    }
+    // Usar primera camara disponible (frontal en tabletas)
+    var camId = cameras[0].id;
 
-    var config = {
-      fps: 15,
-      qrbox: function(w, h) {
-        return { width: Math.floor(w * 0.9), height: Math.floor(h * 0.9) };
+    html5QrcodeScanner.start(
+      camId,
+      {
+        fps: 20,
+        qrbox: function(w, h) {
+          return { width: Math.floor(w * 0.85), height: Math.floor(h * 0.85) };
+        },
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true }
       },
-      aspectRatio: window.screen.height / window.screen.width
-    };
-
-    html5Qrcode.start(
-      cameraId,
-      config,
       function(decodedText) { onQRDetected(decodedText); },
       function() {}
     ).then(function() {
       st.textContent = "Escaneando...";
-      html5QrcodeScanner = html5Qrcode;
     }).catch(function(err) {
-      // Si falla con camara especifica, usar facingMode
-      html5Qrcode.start(
-        { facingMode: "user" },
-        config,
-        function(decodedText) { onQRDetected(decodedText); },
-        function() {}
-      ).then(function() {
-        st.textContent = "Escaneando...";
-        html5QrcodeScanner = html5Qrcode;
-      }).catch(function(e) {
-        st.textContent = "Error camara: " + e;
-      });
+      st.textContent = "Error: " + err;
     });
   }).catch(function(err) {
-    st.textContent = "Error: " + err;
+    st.textContent = "Error camara: " + err;
   });
 }
 
