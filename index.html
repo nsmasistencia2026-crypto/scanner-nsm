@@ -215,47 +215,91 @@ function iniciarScanner(){
   }, 500);
 }
 
+// Calcular estado segun hora local (sin llamar al servidor)
+function calcularEstadoLocal() {
+  var ahora = new Date();
+  var h = ahora.getHours();
+  var m = ahora.getMinutes();
+  var totalMin = h * 60 + m;
+  
+  // Horarios (deben coincidir con CONFIG del Sheets)
+  var puntuaDesde = 7 * 60;      // 07:00
+  var puntualHasta = 7 * 60 + 50; // 07:50
+  var tardeHasta = 11 * 60;       // 11:00
+
+  if (totalMin < puntuaDesde) return "FUERA_HORARIO";
+  if (totalMin >= tardeHasta) return "FUERA_HORARIO";
+  if (totalMin <= puntualHasta) return "PUNTUAL";
+  return "TARDE";
+}
+
+function horaActualStr() {
+  var d = new Date();
+  var h = String(d.getHours()).padStart(2,'0');
+  var m = String(d.getMinutes()).padStart(2,'0');
+  var s = String(d.getSeconds()).padStart(2,'0');
+  return h+":"+m+":"+s;
+}
+
 function onQRDetected(texto){
   if(PROCESANDO) return;
-  var now=Date.now();
+  var now = Date.now();
   if(texto===ULTIMO_ID && now-ULTIMO_TIME<3000) return;
-  ULTIMO_ID=texto;
-  ULTIMO_TIME=now;
-  if(!ONLINE){mostrarResultado({ok:false,tipo:"ERROR",mensaje:"Sin conexion"},texto);sndError();return;}
-  PROCESANDO=true;
-  document.getElementById("ftrStatus").textContent="Procesando...";
+  ULTIMO_ID = texto;
+  ULTIMO_TIME = now;
+  PROCESANDO = true;
 
-  // Una sola llamada al servidor - solo registrar el ID
-  llamarServidor("escanear", {token: TOKEN, id: texto.trim()})
+  // 1. Calcular estado LOCALMENTE - inmediato
+  var estadoLocal = calcularEstadoLocal();
+  var horaLocal = horaActualStr();
+
+  if(!ONLINE) {
+    mostrarResultado({ok:false, tipo:"ERROR", mensaje:"Sin conexion"}, texto);
+    sndError();
+    PROCESANDO = false;
+    return;
+  }
+
+  if(estadoLocal === "FUERA_HORARIO") {
+    mostrarResultado({ok:false, tipo:"FUERA_HORARIO", mensaje:"Fuera del horario escolar"}, texto);
+    sndError();
+    return;
+  }
+
+  // 2. Mostrar resultado INMEDIATAMENTE sin esperar servidor
+  mostrarResultado({
+    ok: true,
+    id: texto.trim(),
+    estado: estadoLocal,
+    hora: horaLocal,
+    tipo: "ENTRADA"
+  }, texto);
+
+  // Sonido inmediato
+  if(estadoLocal==="PUNTUAL") sndPuntual();
+  else sndTarde();
+
+  // 3. Enviar al servidor EN SEGUNDO PLANO (no bloquea)
+  enviarAlServidor(texto.trim(), horaLocal);
+}
+
+function enviarAlServidor(id, hora) {
+  llamarServidor("escanear", {token: TOKEN, id: id})
     .then(function(res) {
-      // Si el token expiro, renovar y reintentar UNA vez
       if (!res.ok && res.mensaje && res.mensaje.indexOf("Sesion") >= 0) {
         var u = sessionStorage.getItem("qr_usuario");
         var p = sessionStorage.getItem("qr_clave");
         return llamarServidor("login", {usuario: u, clave: p})
           .then(function(lr) {
-            if (!lr.ok) return {ok:false, mensaje:"Error de sesion"};
+            if (!lr.ok) return;
             TOKEN = lr.token;
             sessionStorage.setItem("qr_token", lr.token);
-            return llamarServidor("escanear", {token: TOKEN, id: texto.trim()});
+            return llamarServidor("escanear", {token: TOKEN, id: id});
           });
-      }
-      return res;
-    })
-    .then(function(res) {
-      if (!res) return;
-      mostrarResultado(res, texto);
-      if(res.ok) {
-        if(res.estado==="PUNTUAL") sndPuntual();
-        else if(res.estado==="TARDE") sndTarde();
-        else sndError();
-      } else {
-        sndError();
       }
     })
     .catch(function(err) {
-      mostrarResultado({ok:false, tipo:"ERROR", mensaje:"Error de conexion"}, texto);
-      sndError();
+      console.log("Error guardando en servidor:", err.message);
     });
 }
 
