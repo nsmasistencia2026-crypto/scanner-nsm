@@ -193,7 +193,7 @@ tr:hover td { background:#f9f9ff; }
           <!-- Por QR - todos -->
           <div id="justifBuscarQR">
             <div class="alert alert-info">Escanea el QR del estudiante</div>
-            <div id="qrReaderJustif" style="max-width:400px;margin:8px auto 0"></div>
+            <div id="qrReaderJustif" style="max-width:400px;min-height:200px;margin:8px auto 0;background:#000;border-radius:8px"></div>
           </div>
         </div>
         <div id="justifEstudiante" style="display:none">
@@ -252,7 +252,7 @@ tr:hover td { background:#f9f9ff; }
           <div class="alert alert-info" style="margin-bottom:12px">
             Escanea el QR del estudiante para ver sus datos
           </div>
-          <div id="qrReaderEstudiante" style="max-width:400px;margin:0 auto"></div>
+          <div id="qrReaderEstudiante" style="max-width:400px;min-height:200px;margin:0 auto;background:#000;border-radius:8px"></div>
         </div>
         <div id="fichaEstudiante"></div>
       </div>
@@ -409,24 +409,11 @@ function cargarAsistencia() {
   var seccion = document.getElementById('filtSeccion').value;
   var fecha = document.getElementById('filtFecha').value;
   if (!grado || !seccion) { alert('Selecciona grado y seccion'); return; }
-
   document.getElementById('tablaAsistencia').innerHTML = '<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
-
-  // Refrescar token y cargar
-  api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
-    .then(function(loginRes) {
-      if (loginRes.ok) SESSION.token = loginRes.token;
-      return api('escanear', {token: SESSION.token, action:'obtenerAsistenciaDia', fecha: fecha, grado: grado, seccion: seccion});
-    })
-    .then(function(res) {
-      // Como no tenemos endpoint especifico, cargamos directo del sheets via config
-      mostrarTablaAsistencia(grado, seccion, fecha);
-    })
-    .catch(function(){ mostrarTablaAsistencia(grado, seccion, fecha); });
+  mostrarTablaAsistencia(grado, seccion, fecha);
 }
 
 function mostrarTablaAsistencia(grado, seccion, fecha) {
-  // Llamar endpoint de asistencia
   api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
     .then(function(loginRes) {
       if (loginRes.ok) SESSION.token = loginRes.token;
@@ -804,35 +791,42 @@ function iniciarQRAsistencia() {
 
 function iniciarQREstudiante() {
   try {
+    if (qrEst) { try{qrEst.stop();}catch(e){} qrEst=null; }
     qrEst = new Html5Qrcode("qrReaderEstudiante");
-    qrEst.start(
-      {facingMode: "user"},
-      {fps:10, qrbox:{width:200,height:200}},
-      function(texto) {
-        qrEst.stop();
-        document.getElementById('fichaEstudiante').innerHTML = '<div class="loading"><div class="spinner"></div><br>Buscando...</div>';
-        document.getElementById('buscarId').value = texto.trim();
-        buscarEstudianteConId(texto.trim());
-      },
-      function(){}
-    ).catch(function(){});
-  } catch(e) {}
+    Html5Qrcode.getCameras().then(function(cameras) {
+      if (!cameras || cameras.length === 0) return;
+      var camId = cameras[0].id;
+      qrEst.start(camId,
+        {fps:10, qrbox:{width:200,height:200}},
+        function(texto) {
+          qrEst.stop(); qrEst = null;
+          document.getElementById('buscarId').value = texto.trim();
+          buscarEstudianteConId(texto.trim());
+        },
+        function(){}
+      ).catch(function(e){ console.log("QR Est error:",e); });
+    }).catch(function(e){ console.log("getCameras error:",e); });
+  } catch(e) { console.log("QR Est init error:",e); }
 }
 
 function iniciarQRJustif() {
   try {
+    if (qrJustif_) { try{qrJustif_.stop();}catch(e){} qrJustif_=null; }
     qrJustif_ = new Html5Qrcode("qrReaderJustif");
-    qrJustif_.start(
-      {facingMode: "user"},
-      {fps:10, qrbox:{width:200,height:200}},
-      function(texto) {
-        qrJustif_.stop();
-        document.getElementById('justifId').value = texto.trim();
-        buscarEstudianteJustifConId(texto.trim());
-      },
-      function(){}
-    ).catch(function(){});
-  } catch(e) {}
+    Html5Qrcode.getCameras().then(function(cameras) {
+      if (!cameras || cameras.length === 0) return;
+      var camId = cameras[0].id;
+      qrJustif_.start(camId,
+        {fps:10, qrbox:{width:200,height:200}},
+        function(texto) {
+          qrJustif_.stop(); qrJustif_ = null;
+          document.getElementById('justifId').value = texto.trim();
+          buscarEstudianteJustifConId(texto.trim());
+        },
+        function(){}
+      ).catch(function(e){ console.log("QR Justif error:",e); });
+    }).catch(function(e){ console.log("getCameras error:",e); });
+  } catch(e) { console.log("QR Justif init error:",e); }
 }
 
 // SALIR
