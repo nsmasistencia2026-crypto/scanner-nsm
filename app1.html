@@ -103,6 +103,7 @@ tr:hover td { background:#f9f9ff; }
   .appContent { padding:12px; }
 }
 </style>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
 
@@ -173,10 +174,18 @@ tr:hover td { background:#f9f9ff; }
       <div class="card">
         <div class="cardTitle">✏️ Registrar Justificacion</div>
         <div class="formGroup">
-          <label>ID del Estudiante</label>
-          <div style="display:flex;gap:8px">
-            <input type="number" id="justifId" placeholder="Ingresa el ID" style="flex:1;border:2px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:14px;outline:none">
-            <button class="btnBuscar" onclick="buscarEstudianteJustif()">Buscar</button>
+          <label>Buscar Estudiante</label>
+          <!-- Por ID - solo Admin y SuperAdmin -->
+          <div id="justifBuscarId" style="display:none;margin-bottom:8px">
+            <div style="display:flex;gap:8px">
+              <input type="number" id="justifId" placeholder="Ingresa el ID" style="flex:1;border:2px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:14px;outline:none">
+              <button class="btnBuscar" onclick="buscarEstudianteJustif()">Buscar</button>
+            </div>
+          </div>
+          <!-- Por QR - todos -->
+          <div id="justifBuscarQR">
+            <div class="alert alert-info">Escanea el QR del estudiante</div>
+            <div id="qrReaderJustif" style="max-width:400px;margin:8px auto 0"></div>
           </div>
         </div>
         <div id="justifEstudiante" style="display:none">
@@ -223,9 +232,19 @@ tr:hover td { background:#f9f9ff; }
     <div id="mod-estudiante" style="display:none">
       <div class="card">
         <div class="cardTitle">👤 Datos del Estudiante</div>
-        <div class="filtros">
-          <input type="number" class="selectField" id="buscarId" placeholder="ID del estudiante">
-          <button class="btnBuscar" onclick="buscarEstudiante()">🔍 Buscar</button>
+        <!-- Busqueda por ID - solo Admin y SuperAdmin -->
+        <div id="buscarPorId" style="display:none">
+          <div class="filtros">
+            <input type="number" class="selectField" id="buscarId" placeholder="ID del estudiante">
+            <button class="btnBuscar" onclick="buscarEstudiante()">🔍 Buscar por ID</button>
+          </div>
+        </div>
+        <!-- Busqueda por QR - todos los roles -->
+        <div id="buscarPorQR">
+          <div class="alert alert-info" style="margin-bottom:12px">
+            Escanea el QR del estudiante para ver sus datos
+          </div>
+          <div id="qrReaderEstudiante" style="max-width:400px;margin:0 auto"></div>
         </div>
         <div id="fichaEstudiante"></div>
       </div>
@@ -330,16 +349,25 @@ function iniciarApp() {
   document.getElementById('hdrInst').textContent = SESSION.institucion || 'NSM';
   document.getElementById('hdrNombre').textContent = SESSION.nombre || '';
   document.getElementById('hdrRol').textContent = SESSION.rol || '';
-  // Ocultar modulos segun rol
   aplicarPermisosPorRol();
   cargarEstadisticas();
+  // Iniciar scanners QR
+  setTimeout(function(){ iniciarQREstudiante(); iniciarQRJustif(); }, 500);
 }
 
 function aplicarPermisosPorRol() {
   var rol = SESSION.rol;
+  // Solo admin y superadmin pueden buscar por ID
+  if (['SUPER_ADMIN','ADMINISTRADOR'].includes(rol)) {
+    var buscarId = document.getElementById('buscarPorId');
+    if (buscarId) buscarId.style.display = 'block';
+    var justifId = document.getElementById('justifBuscarId');
+    if (justifId) justifId.style.display = 'block';
+  }
   // Solo admin, superadmin y auxiliar pueden justificar
   if (!['SUPER_ADMIN','ADMINISTRADOR','AUXILIAR'].includes(rol)) {
-    document.querySelector('[onclick*="justificaciones"]').style.display = 'none';
+    var btnJustif = document.querySelector('[onclick*="justificaciones"]');
+    if (btnJustif) btnJustif.style.display = 'none';
   }
 }
 
@@ -466,6 +494,10 @@ function verMes() {
 function buscarEstudianteJustif() {
   var id = document.getElementById('justifId').value.trim();
   if (!id) { alert('Ingresa el ID del estudiante'); return; }
+  buscarEstudianteJustifConId(id);
+}
+
+function buscarEstudianteJustifConId(id) {
   api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
     .then(function(loginRes) {
       if (loginRes.ok) SESSION.token = loginRes.token;
@@ -550,6 +582,10 @@ function cargarJustificaciones() {
 function buscarEstudiante() {
   var id = document.getElementById('buscarId').value.trim();
   if (!id) { alert('Ingresa el ID'); return; }
+  buscarEstudianteConId(id);
+}
+
+function buscarEstudianteConId(id) {
   document.getElementById('fichaEstudiante').innerHTML = '<div class="loading"><div class="spinner"></div><br>Buscando...</div>';
 
   api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
@@ -701,10 +737,49 @@ function renderEstadisticas(res) {
   document.getElementById('statsGenerales').innerHTML = html;
 }
 
+// QR SCANNERS PARA APP1
+var qrEst = null;
+var qrJustif_ = null;
+
+function iniciarQREstudiante() {
+  try {
+    qrEst = new Html5Qrcode("qrReaderEstudiante");
+    qrEst.start(
+      {facingMode: "user"},
+      {fps:10, qrbox:{width:200,height:200}},
+      function(texto) {
+        qrEst.stop();
+        document.getElementById('fichaEstudiante').innerHTML = '<div class="loading"><div class="spinner"></div><br>Buscando...</div>';
+        document.getElementById('buscarId').value = texto.trim();
+        buscarEstudianteConId(texto.trim());
+      },
+      function(){}
+    ).catch(function(){});
+  } catch(e) {}
+}
+
+function iniciarQRJustif() {
+  try {
+    qrJustif_ = new Html5Qrcode("qrReaderJustif");
+    qrJustif_.start(
+      {facingMode: "user"},
+      {fps:10, qrbox:{width:200,height:200}},
+      function(texto) {
+        qrJustif_.stop();
+        document.getElementById('justifId').value = texto.trim();
+        buscarEstudianteJustifConId(texto.trim());
+      },
+      function(){}
+    ).catch(function(){});
+  } catch(e) {}
+}
+
 // SALIR
 function salir() {
   if (!confirm('Cerrar sesion?')) return;
   SESSION = null;
+  if (qrEst) qrEst.stop().catch(function(){});
+  if (qrJustif_) qrJustif_.stop().catch(function(){});
   document.getElementById('appScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('inpUsuario').value = '';
