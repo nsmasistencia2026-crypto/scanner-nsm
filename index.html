@@ -187,35 +187,33 @@ function iniciarScanner(){
   var st = document.getElementById("ftrStatus");
   st.textContent = "Iniciando camara...";
 
-  html5QrcodeScanner = new Html5Qrcode("reader");
-
-  Html5Qrcode.getCameras().then(function(cameras) {
-    if (!cameras || cameras.length === 0) {
-      st.textContent = "No se encontro camara";
-      return;
-    }
-    // Usar primera camara disponible (frontal en tabletas)
-    var camId = cameras[0].id;
-
-    html5QrcodeScanner.start(
-      camId,
-      {
-        fps: 20,
-        qrbox: function(w, h) {
-          return { width: Math.floor(w * 0.85), height: Math.floor(h * 0.85) };
-        },
-        experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+  // Usar Html5QrcodeScanner - mas estable y rapido
+  html5QrcodeScanner = new Html5QrcodeScanner(
+    "reader",
+    {
+      fps: 20,
+      qrbox: function(w, h) {
+        return { width: Math.floor(w * 0.85), height: Math.floor(h * 0.85) };
       },
-      function(decodedText) { onQRDetected(decodedText); },
-      function() {}
-    ).then(function() {
-      st.textContent = "Escaneando...";
-    }).catch(function(err) {
-      st.textContent = "Error: " + err;
-    });
-  }).catch(function(err) {
-    st.textContent = "Error camara: " + err;
-  });
+      rememberLastUsedCamera: true,
+      showTorchButtonIfSupported: false,
+      showZoomSliderIfSupported: false,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+    },
+    false
+  );
+
+  html5QrcodeScanner.render(
+    function(decodedText) { onQRDetected(decodedText); },
+    function() {}
+  );
+
+  // Ocultar botones de la libreria que no necesitamos
+  setTimeout(function() {
+    var dashboard = document.getElementById("reader__dashboard");
+    if (dashboard) dashboard.style.display = "none";
+    st.textContent = "Escaneando...";
+  }, 1000);
 }
 
 function onQRDetected(texto){
@@ -316,7 +314,7 @@ function rotarPantalla(){
 function salir(){
   if(!confirm("Cerrar sesion?")) return;
   sessionStorage.clear();TOKEN=null;
-  if(html5QrcodeScanner) html5QrcodeScanner.clear().catch(function(){});
+  if(html5QrcodeScanner) { try { html5QrcodeScanner.clear(); } catch(e){} html5QrcodeScanner = null; }
   document.getElementById("scannerScreen").style.display="none";
   document.getElementById("loginScreen").style.display="flex";
   document.getElementById("inpUsuario").value="";
