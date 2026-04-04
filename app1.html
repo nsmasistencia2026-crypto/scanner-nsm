@@ -164,6 +164,14 @@ tr:hover td { background:#f9f9ff; }
           <button class="btnBuscar" onclick="cargarAsistencia()">🔍 Ver</button>
           <button class="btnSecundario" onclick="verMes()">📅 Ver Mes</button>
         </div>
+        <!-- Busqueda individual por QR -->
+        <div id="qrAsistenciaWrap" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+            <span style="font-size:13px;color:#666">Escanear QR para ver ficha individual:</span>
+            <button class="btnSecundario" onclick="toggleQRAsistencia()" id="btnToggleQR">📷 Activar QR</button>
+          </div>
+          <div id="qrReaderAsistencia" style="display:none;max-width:350px"></div>
+        </div>
         <div id="statsAsistencia" class="statsGrid" style="display:none"></div>
         <div id="tablaAsistencia" class="tablaWrap"></div>
       </div>
@@ -351,8 +359,6 @@ function iniciarApp() {
   document.getElementById('hdrRol').textContent = SESSION.rol || '';
   aplicarPermisosPorRol();
   cargarEstadisticas();
-  // Iniciar scanners QR
-  setTimeout(function(){ iniciarQREstudiante(); iniciarQRJustif(); }, 500);
 }
 
 function aplicarPermisosPorRol() {
@@ -379,6 +385,22 @@ function mostrarModulo(nombre, btn) {
   document.querySelectorAll('.navBtn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   if (nombre === 'estadisticas') cargarEstadisticas();
+  // Iniciar QR segun modulo
+  if (nombre === 'estudiante') {
+    setTimeout(function(){ pararQRs(); iniciarQREstudiante(); }, 300);
+  } else if (nombre === 'justificaciones') {
+    setTimeout(function(){ pararQRs(); iniciarQRJustif(); }, 300);
+  } else if (nombre === 'asistencia') {
+    setTimeout(function(){ pararQRs(); iniciarQRAsistencia(); }, 300);
+  } else {
+    pararQRs();
+  }
+}
+
+function pararQRs() {
+  if (qrEst) { try { qrEst.stop(); } catch(e){} qrEst = null; }
+  if (qrJustif_) { try { qrJustif_.stop(); } catch(e){} qrJustif_ = null; }
+  if (qrAsist) { try { qrAsist.stop(); } catch(e){} qrAsist = null; qrAsistActivo = false; }
 }
 
 // ASISTENCIA
@@ -740,6 +762,45 @@ function renderEstadisticas(res) {
 // QR SCANNERS PARA APP1
 var qrEst = null;
 var qrJustif_ = null;
+var qrAsist = null;
+var qrAsistActivo = false;
+
+function toggleQRAsistencia() {
+  var btn = document.getElementById('btnToggleQR');
+  var reader = document.getElementById('qrReaderAsistencia');
+  if (qrAsistActivo) {
+    if (qrAsist) { try { qrAsist.stop(); } catch(e){} qrAsist = null; }
+    reader.style.display = 'none';
+    btn.textContent = '📷 Activar QR';
+    qrAsistActivo = false;
+  } else {
+    reader.style.display = 'block';
+    btn.textContent = '⏹ Detener QR';
+    qrAsistActivo = true;
+    iniciarQRAsistencia();
+  }
+}
+
+function iniciarQRAsistencia() {
+  try {
+    qrAsist = new Html5Qrcode("qrReaderAsistencia");
+    qrAsist.start(
+      {facingMode: "user"},
+      {fps:10, qrbox:{width:200,height:200}},
+      function(texto) {
+        qrAsist.stop();
+        qrAsistActivo = false;
+        document.getElementById('qrReaderAsistencia').style.display = 'none';
+        document.getElementById('btnToggleQR').textContent = '📷 Activar QR';
+        // Buscar estudiante y mostrar ficha
+        document.getElementById('buscarId').value = texto.trim();
+        mostrarModulo('estudiante', document.querySelector('[onclick*="estudiante"]'));
+        buscarEstudianteConId(texto.trim());
+      },
+      function(){}
+    ).catch(function(e){ console.log('QR asist error:', e); });
+  } catch(e) { console.log('QR init error:', e); }
+}
 
 function iniciarQREstudiante() {
   try {
