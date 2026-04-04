@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Gestión - Asistencia</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#f0f2f5; font-family:Arial,sans-serif; min-height:100vh; }
+
+/* LOGIN */
+#loginScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:24px; background:linear-gradient(135deg,#1a237e,#0d47a1); }
+.loginLogo { font-size:42px; font-weight:900; color:#fff; letter-spacing:4px; text-align:center; margin-bottom:8px; }
+.loginSub { color:rgba(255,255,255,0.6); font-size:12px; letter-spacing:2px; text-transform:uppercase; text-align:center; margin-bottom:32px; }
+.loginBox { width:100%; max-width:380px; background:#fff; border-radius:16px; padding:32px 28px; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+.loginTitle { font-size:20px; font-weight:700; color:#1a237e; margin-bottom:24px; text-align:center; }
+.fieldLabel { font-size:12px; color:#666; font-weight:600; margin-bottom:6px; display:block; text-transform:uppercase; letter-spacing:1px; }
+.fieldInput { width:100%; border:2px solid #e0e0e0; border-radius:8px; padding:12px 14px; font-size:15px; outline:none; transition:border-color .2s; margin-bottom:16px; }
+.fieldInput:focus { border-color:#1a237e; }
+.btnPrimary { width:100%; background:#1a237e; color:#fff; border:none; border-radius:8px; padding:14px; font-size:16px; font-weight:700; cursor:pointer; letter-spacing:1px; }
+.btnPrimary:disabled { opacity:0.5; }
+.loginError { background:#ffebee; border:1px solid #ef9a9a; border-radius:8px; padding:10px 14px; color:#c62828; font-size:13px; margin-bottom:16px; display:none; }
+
+/* HEADER */
+#appScreen { display:none; flex-direction:column; min-height:100vh; }
+.appHeader { background:#1a237e; color:#fff; padding:0 20px; height:60px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+.headerInst { font-size:15px; font-weight:700; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.headerUser { font-size:12px; color:rgba(255,255,255,0.7); text-align:right; }
+.headerUser b { display:block; color:#fff; font-size:13px; }
+.btnSalir { background:rgba(255,255,255,0.15); border:none; color:#fff; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:13px; }
+
+/* NAV */
+.appNav { background:#fff; border-bottom:1px solid #e0e0e0; display:flex; overflow-x:auto; padding:0 12px; }
+.navBtn { padding:14px 18px; border:none; background:none; font-size:13px; font-weight:600; color:#666; cursor:pointer; white-space:nowrap; border-bottom:3px solid transparent; transition:all .2s; }
+.navBtn.active { color:#1a237e; border-bottom-color:#1a237e; }
+
+/* CONTENT */
+.appContent { flex:1; padding:20px; max-width:1200px; margin:0 auto; width:100%; }
+
+/* CARDS */
+.card { background:#fff; border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+.cardTitle { font-size:16px; font-weight:700; color:#1a237e; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+
+/* FILTROS */
+.filtros { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+.selectField { border:2px solid #e0e0e0; border-radius:8px; padding:8px 12px; font-size:14px; outline:none; background:#fff; cursor:pointer; }
+.selectField:focus { border-color:#1a237e; }
+.btnBuscar { background:#1a237e; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-size:14px; font-weight:600; cursor:pointer; }
+.btnSecundario { background:#f5f5f5; color:#333; border:1px solid #ddd; border-radius:8px; padding:9px 16px; font-size:14px; cursor:pointer; }
+
+/* TABLA */
+.tablaWrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { background:#f5f7ff; color:#1a237e; font-weight:700; padding:10px 12px; text-align:left; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
+td { padding:10px 12px; border-bottom:1px solid #f0f0f0; }
+tr:hover td { background:#f9f9ff; }
+
+/* ESTADOS */
+.badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:1px; }
+.badge-puntual { background:#e8f5e9; color:#2e7d32; }
+.badge-tarde { background:#fff3e0; color:#e65100; }
+.badge-falta { background:#ffebee; color:#c62828; }
+.badge-justificado { background:#e3f2fd; color:#1565c0; }
+.badge-fuera { background:#f3e5f5; color:#6a1b9a; }
+
+/* STATS */
+.statsGrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px; }
+.statCard { background:#fff; border-radius:10px; padding:16px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.06); border-left:4px solid; }
+.statCard.verde { border-color:#4caf50; }
+.statCard.naranja { border-color:#ff9800; }
+.statCard.rojo { border-color:#f44336; }
+.statCard.azul { border-color:#2196f3; }
+.statCard.gris { border-color:#9e9e9e; }
+.statNum { font-size:32px; font-weight:900; color:#333; }
+.statLabel { font-size:12px; color:#666; margin-top:4px; text-transform:uppercase; letter-spacing:1px; }
+
+/* FICHA ESTUDIANTE */
+.fichaGrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.fichaItem label { font-size:11px; color:#666; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px; }
+.fichaItem span { font-size:14px; font-weight:600; color:#333; }
+
+/* JUSTIFICACION FORM */
+.formGroup { margin-bottom:14px; }
+.formGroup label { font-size:12px; color:#666; font-weight:600; display:block; margin-bottom:6px; text-transform:uppercase; }
+.formGroup input, .formGroup select, .formGroup textarea { width:100%; border:2px solid #e0e0e0; border-radius:8px; padding:10px 12px; font-size:14px; outline:none; font-family:Arial,sans-serif; }
+.formGroup input:focus, .formGroup select:focus, .formGroup textarea:focus { border-color:#1a237e; }
+
+/* LOADING */
+.loading { text-align:center; padding:40px; color:#666; }
+.spinner { display:inline-block; width:30px; height:30px; border:3px solid #e0e0e0; border-top-color:#1a237e; border-radius:50%; animation:spin .7s linear infinite; margin-bottom:12px; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ALERT */
+.alert { padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:14px; }
+.alert-success { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+.alert-error { background:#ffebee; color:#c62828; border:1px solid #ef9a9a; }
+.alert-info { background:#e3f2fd; color:#1565c0; border:1px solid #90caf9; }
+
+/* RESPONSIVE */
+@media(max-width:600px) {
+  .fichaGrid { grid-template-columns:1fr; }
+  .filtros { flex-direction:column; }
+  .appContent { padding:12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="loginLogo">PANEL<br>NSM</div>
+  <div class="loginSub">Sistema de Asistencia</div>
+  <div class="loginBox">
+    <div class="loginTitle">Iniciar Sesion</div>
+    <div class="loginError" id="loginError"></div>
+    <label class="fieldLabel">Usuario</label>
+    <input class="fieldInput" type="text" id="inpUsuario" autocapitalize="none" placeholder="usuario">
+    <label class="fieldLabel">Contrasena</label>
+    <input class="fieldInput" type="password" id="inpClave" placeholder=".........">
+    <button class="btnPrimary" id="btnLogin">INGRESAR</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <!-- Header -->
+  <div class="appHeader">
+    <div class="headerInst" id="hdrInst">NSM</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="headerUser"><b id="hdrNombre">---</b><span id="hdrRol"></span></div>
+      <button class="btnSalir" onclick="salir()">Salir</button>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="appNav">
+    <button class="navBtn active" onclick="mostrarModulo('asistencia',this)">📋 Asistencia</button>
+    <button class="navBtn" onclick="mostrarModulo('justificaciones',this)">✏️ Justificaciones</button>
+    <button class="navBtn" onclick="mostrarModulo('estudiante',this)">👤 Estudiante</button>
+    <button class="navBtn" onclick="mostrarModulo('reportes',this)">📊 Reportes</button>
+    <button class="navBtn" onclick="mostrarModulo('estadisticas',this)">📈 Estadisticas</button>
+  </div>
+
+  <!-- Content -->
+  <div class="appContent">
+
+    <!-- MODULO 1: ASISTENCIA -->
+    <div id="mod-asistencia">
+      <div class="card">
+        <div class="cardTitle">📋 Registro de Asistencia</div>
+        <div class="filtros">
+          <select class="selectField" id="filtGrado">
+            <option value="">-- Grado --</option>
+            <option>PRIMERO</option><option>SEGUNDO</option><option>TERCERO</option>
+            <option>CUARTO</option><option>QUINTO</option>
+          </select>
+          <select class="selectField" id="filtSeccion">
+            <option value="">-- Seccion --</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option>
+            <option>E</option><option>F</option><option>G</option><option>H</option>
+          </select>
+          <input type="date" class="selectField" id="filtFecha">
+          <button class="btnBuscar" onclick="cargarAsistencia()">🔍 Ver</button>
+          <button class="btnSecundario" onclick="verMes()">📅 Ver Mes</button>
+        </div>
+        <div id="statsAsistencia" class="statsGrid" style="display:none"></div>
+        <div id="tablaAsistencia" class="tablaWrap"></div>
+      </div>
+    </div>
+
+    <!-- MODULO 2: JUSTIFICACIONES -->
+    <div id="mod-justificaciones" style="display:none">
+      <div class="card">
+        <div class="cardTitle">✏️ Registrar Justificacion</div>
+        <div class="formGroup">
+          <label>ID del Estudiante</label>
+          <div style="display:flex;gap:8px">
+            <input type="number" id="justifId" placeholder="Ingresa el ID" style="flex:1;border:2px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:14px;outline:none">
+            <button class="btnBuscar" onclick="buscarEstudianteJustif()">Buscar</button>
+          </div>
+        </div>
+        <div id="justifEstudiante" style="display:none">
+          <div class="alert alert-info" id="justifNombre"></div>
+          <div class="formGroup">
+            <label>Fecha de la Falta/Tardanza</label>
+            <input type="date" id="justifFecha">
+          </div>
+          <div class="formGroup">
+            <label>Tipo</label>
+            <select id="justifTipo">
+              <option value="FALTA">Falta</option>
+              <option value="TARDANZA">Tardanza</option>
+            </select>
+          </div>
+          <div class="formGroup">
+            <label>Motivo</label>
+            <textarea id="justifMotivo" rows="3" placeholder="Describe el motivo de la justificacion..."></textarea>
+          </div>
+          <button class="btnPrimary" onclick="registrarJustificacion()" style="max-width:200px">Guardar</button>
+        </div>
+        <div id="justifMsg"></div>
+      </div>
+      <div class="card">
+        <div class="cardTitle">📋 Historial de Justificaciones</div>
+        <div class="filtros">
+          <select class="selectField" id="filtJustifGrado">
+            <option value="">-- Grado --</option>
+            <option>PRIMERO</option><option>SEGUNDO</option><option>TERCERO</option>
+            <option>CUARTO</option><option>QUINTO</option>
+          </select>
+          <select class="selectField" id="filtJustifSeccion">
+            <option value="">-- Seccion --</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option>
+            <option>E</option><option>F</option><option>G</option><option>H</option>
+          </select>
+          <button class="btnBuscar" onclick="cargarJustificaciones()">🔍 Ver</button>
+        </div>
+        <div id="tablaJustificaciones" class="tablaWrap"></div>
+      </div>
+    </div>
+
+    <!-- MODULO 3: ESTUDIANTE -->
+    <div id="mod-estudiante" style="display:none">
+      <div class="card">
+        <div class="cardTitle">👤 Datos del Estudiante</div>
+        <div class="filtros">
+          <input type="number" class="selectField" id="buscarId" placeholder="ID del estudiante">
+          <button class="btnBuscar" onclick="buscarEstudiante()">🔍 Buscar</button>
+        </div>
+        <div id="fichaEstudiante"></div>
+      </div>
+    </div>
+
+    <!-- MODULO 4: REPORTES -->
+    <div id="mod-reportes" style="display:none">
+      <div class="card">
+        <div class="cardTitle">📊 Reporte Individual (PDF)</div>
+        <div class="filtros">
+          <input type="number" class="selectField" id="repId" placeholder="ID estudiante">
+          <input type="date" class="selectField" id="repDesde">
+          <input type="date" class="selectField" id="repHasta">
+          <button class="btnBuscar" onclick="generarReportePDF()">📄 Generar PDF</button>
+        </div>
+        <div id="repIndividual"></div>
+      </div>
+      <div class="card">
+        <div class="cardTitle">📊 Reporte Mensual por Seccion</div>
+        <div class="filtros">
+          <select class="selectField" id="repGrado">
+            <option value="">-- Grado --</option>
+            <option>PRIMERO</option><option>SEGUNDO</option><option>TERCERO</option>
+            <option>CUARTO</option><option>QUINTO</option>
+          </select>
+          <select class="selectField" id="repSeccion">
+            <option value="">-- Seccion --</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option>
+            <option>E</option><option>F</option><option>G</option><option>H</option>
+          </select>
+          <input type="month" class="selectField" id="repMes">
+          <button class="btnBuscar" onclick="generarReporteExcel()">📊 Descargar Excel</button>
+        </div>
+        <div id="repMensual"></div>
+      </div>
+    </div>
+
+    <!-- MODULO 5: ESTADISTICAS -->
+    <div id="mod-estadisticas" style="display:none">
+      <div id="statsGenerales"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var SESSION = null;
+var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbztLf6CwY61Uu_nLi-w50Yf1cXjxO5hia_gWY3WEXRllwwfnE5JaGgwEAHWKXWn82QL/exec";
+var ESTUDIANTE_JUSTIF = null;
+
+// Servidor
+function api(accion, datos) {
+  var p = new URLSearchParams({action: accion});
+  if (datos) Object.keys(datos).forEach(function(k){ p.append(k, datos[k]); });
+  return fetch(WEBAPP_URL + "?" + p.toString())
+    .then(function(r){ return r.json(); });
+}
+
+function apiConToken(accion, datos) {
+  var d = Object.assign({token: SESSION.token}, datos||{});
+  return api(accion, d);
+}
+
+// Init
+window.onload = function() {
+  var hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('filtFecha').value = hoy;
+  document.getElementById('repDesde').value = hoy;
+  document.getElementById('repHasta').value = hoy;
+  document.getElementById('repMes').value = hoy.substring(0,7);
+  document.getElementById('btnLogin').onclick = handleLogin;
+  document.getElementById('inpClave').onkeydown = function(e){ if(e.key==='Enter') handleLogin(); };
+};
+
+// Login
+function handleLogin() {
+  var u = document.getElementById('inpUsuario').value.trim();
+  var p = document.getElementById('inpClave').value.trim();
+  if (!u || !p) { mostrarLoginError('Ingresa usuario y contrasena'); return; }
+  var btn = document.getElementById('btnLogin');
+  btn.disabled = true; btn.textContent = 'VERIFICANDO...';
+  api('login', {usuario: u, clave: p})
+    .then(function(res) {
+      btn.disabled = false; btn.textContent = 'INGRESAR';
+      if (!res.ok) { mostrarLoginError(res.mensaje || 'Error'); return; }
+      SESSION = res;
+      SESSION.usuario = u;
+      SESSION.clave = p;
+      iniciarApp();
+    })
+    .catch(function(){ btn.disabled=false; btn.textContent='INGRESAR'; mostrarLoginError('Error de conexion'); });
+}
+
+function mostrarLoginError(msg) {
+  var el = document.getElementById('loginError');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function iniciarApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'flex';
+  document.getElementById('hdrInst').textContent = SESSION.institucion || 'NSM';
+  document.getElementById('hdrNombre').textContent = SESSION.nombre || '';
+  document.getElementById('hdrRol').textContent = SESSION.rol || '';
+  // Ocultar modulos segun rol
+  aplicarPermisosPorRol();
+  cargarEstadisticas();
+}
+
+function aplicarPermisosPorRol() {
+  var rol = SESSION.rol;
+  // Solo admin, superadmin y auxiliar pueden justificar
+  if (!['SUPER_ADMIN','ADMINISTRADOR','AUXILIAR'].includes(rol)) {
+    document.querySelector('[onclick*="justificaciones"]').style.display = 'none';
+  }
+}
+
+// Modulos
+function mostrarModulo(nombre, btn) {
+  ['asistencia','justificaciones','estudiante','reportes','estadisticas'].forEach(function(m){
+    document.getElementById('mod-'+m).style.display = m===nombre ? 'block' : 'none';
+  });
+  document.querySelectorAll('.navBtn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  if (nombre === 'estadisticas') cargarEstadisticas();
+}
+
+// ASISTENCIA
+function cargarAsistencia() {
+  var grado = document.getElementById('filtGrado').value;
+  var seccion = document.getElementById('filtSeccion').value;
+  var fecha = document.getElementById('filtFecha').value;
+  if (!grado || !seccion) { alert('Selecciona grado y seccion'); return; }
+
+  document.getElementById('tablaAsistencia').innerHTML = '<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
+
+  // Refrescar token y cargar
+  api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
+    .then(function(loginRes) {
+      if (loginRes.ok) SESSION.token = loginRes.token;
+      return api('escanear', {token: SESSION.token, action:'obtenerAsistenciaDia', fecha: fecha, grado: grado, seccion: seccion});
+    })
+    .then(function(res) {
+      // Como no tenemos endpoint especifico, cargamos directo del sheets via config
+      mostrarTablaAsistencia(grado, seccion, fecha);
+    })
+    .catch(function(){ mostrarTablaAsistencia(grado, seccion, fecha); });
+}
+
+function mostrarTablaAsistencia(grado, seccion, fecha) {
+  // Llamar endpoint de asistencia
+  api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
+    .then(function(loginRes) {
+      if (loginRes.ok) SESSION.token = loginRes.token;
+      var p = new URLSearchParams({action: 'obtenerAsistenciaDia', token: SESSION.token, fecha: fecha, grado: grado, seccion: seccion});
+      return fetch(WEBAPP_URL + '?' + p.toString()).then(function(r){ return r.json(); });
+    })
+    .then(function(res) {
+      if (!res.ok) {
+        document.getElementById('tablaAsistencia').innerHTML = '<div class="alert alert-error">'+res.mensaje+'</div>';
+        return;
+      }
+      renderTablaAsistencia(res.registros, grado, seccion, fecha);
+    })
+    .catch(function(err) {
+      document.getElementById('tablaAsistencia').innerHTML = '<div class="alert alert-error">Error al cargar datos</div>';
+    });
+}
+
+function renderTablaAsistencia(registros, grado, seccion, fecha) {
+  var cont = document.getElementById('tablaAsistencia');
+  var stats = document.getElementById('statsAsistencia');
+
+  if (!registros || registros.length === 0) {
+    cont.innerHTML = '<div class="alert alert-info">No hay registros para esta fecha y seccion.</div>';
+    stats.style.display = 'none';
+    return;
+  }
+
+  // Estadisticas
+  var puntuales=0, tardes=0, faltas=0, justificados=0;
+  registros.forEach(function(r){
+    var e = (r.estado||'').toUpperCase();
+    if(e==='PUNTUAL') puntuales++;
+    else if(e==='TARDE') tardes++;
+    else if(e==='FALTA') faltas++;
+    else if(e==='JUSTIFICADO') justificados++;
+  });
+
+  stats.style.display = 'grid';
+  stats.innerHTML =
+    statCard(puntuales,'Puntuales','verde') +
+    statCard(tardes,'Tardanzas','naranja') +
+    statCard(faltas,'Faltas','rojo') +
+    statCard(justificados,'Justificados','azul') +
+    statCard(registros.length,'Total','gris');
+
+  // Tabla
+  var html = '<table><thead><tr><th>N°</th><th>Nombre</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody>';
+  registros.forEach(function(r, i) {
+    var badge = badgeEstado(r.estado);
+    html += '<tr style="background:'+colorFila(r.estado)+'">' +
+      '<td>'+(i+1)+'</td>' +
+      '<td><b>'+r.nombre+'</b></td>' +
+      '<td>'+(r.horaEntrada||'---')+'</td>' +
+      '<td>'+(r.horaSalida||'---')+'</td>' +
+      '<td>'+badge+'</td>' +
+      '</tr>';
+  });
+  html += '</tbody></table>';
+  cont.innerHTML = html;
+}
+
+function statCard(num, label, color) {
+  return '<div class="statCard '+color+'"><div class="statNum">'+num+'</div><div class="statLabel">'+label+'</div></div>';
+}
+
+function badgeEstado(estado) {
+  var e = (estado||'').toUpperCase();
+  var cls = e==='PUNTUAL'?'puntual':e==='TARDE'?'tarde':e==='FALTA'?'falta':e==='JUSTIFICADO'?'justificado':'fuera';
+  return '<span class="badge badge-'+cls+'">'+e+'</span>';
+}
+
+function colorFila(estado) {
+  var e = (estado||'').toUpperCase();
+  if(e==='PUNTUAL') return '#f1f8e9';
+  if(e==='TARDE') return '#fff8e1';
+  if(e==='FALTA') return '#ffebee';
+  if(e==='JUSTIFICADO') return '#e3f2fd';
+  return '#fff';
+}
+
+function verMes() {
+  alert('Vista mensual: proximamente disponible');
+}
+
+// JUSTIFICACIONES
+function buscarEstudianteJustif() {
+  var id = document.getElementById('justifId').value.trim();
+  if (!id) { alert('Ingresa el ID del estudiante'); return; }
+  api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
+    .then(function(loginRes) {
+      if (loginRes.ok) SESSION.token = loginRes.token;
+      var p = new URLSearchParams({action:'obtenerEstudiante', token: SESSION.token, id: id});
+      return fetch(WEBAPP_URL+'?'+p.toString()).then(function(r){ return r.json(); });
+    })
+    .then(function(res) {
+      if (!res.ok) { alert(res.mensaje); return; }
+      ESTUDIANTE_JUSTIF = res.estudiante;
+      document.getElementById('justifNombre').textContent =
+        res.estudiante.nombre + ' | ' + res.estudiante.grado + ' ' + res.estudiante.seccion;
+      document.getElementById('justifEstudiante').style.display = 'block';
+      var hoy = new Date().toISOString().split('T')[0];
+      document.getElementById('justifFecha').value = hoy;
+    })
+    .catch(function(){ alert('Error al buscar estudiante'); });
+}
+
+function registrarJustificacion() {
+  if (!ESTUDIANTE_JUSTIF) { alert('Busca un estudiante primero'); return; }
+  var fecha = document.getElementById('justifFecha').value;
+  var tipo = document.getElementById('justifTipo').value;
+  var motivo = document.getElementById('justifMotivo').value.trim();
+  if (!fecha || !motivo) { alert('Completa todos los campos'); return; }
+
+  api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
+    .then(function(loginRes) {
+      if (loginRes.ok) SESSION.token = loginRes.token;
+      var p = new URLSearchParams({
+        action: 'registrarJustificacion',
+        token: SESSION.token,
+        idEstudiante: ESTUDIANTE_JUSTIF.id,
+        fechaFalta: fecha,
+        tipoFalta: tipo,
+        motivo: motivo
+      });
+      return fetch(WEBAPP_URL+'?'+p.toString()).then(function(r){ return r.json(); });
+    })
+    .then(function(res) {
+      var msg = document.getElementById('justifMsg');
+      if (res.ok) {
+        msg.innerHTML = '<div class="alert alert-success">Justificacion registrada correctamente</div>';
+        document.getElementById('justifMotivo').value = '';
+      } else {
+        msg.innerHTML = '<div class="alert alert-error">'+res.mensaje+'</div>';
+      }
+    })
+    .catch(function(){ alert('Error al registrar'); });
+}
+
+function cargarJustificaciones() {
+  var grado = document.getElementById('filtJustifGrado').value;
+  var seccion = document.getElementById('filtJustifSeccion').value;
+  document.getElementById('tablaJustificaciones').innerHTML = '<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
+  api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
+    .then(function(loginRes) {
+      if (loginRes.ok) SESSION.token = loginRes.token;
+      var p = new URLSearchParams({action:'obtenerJustificaciones', token: SESSION.token, grado: grado, seccion: seccion});
+      return fetch(WEBAPP_URL+'?'+p.toString()).then(function(r){ return r.json(); });
+    })
+    .then(function(res) {
+      if (!res.ok || !res.justificaciones) {
+        document.getElementById('tablaJustificaciones').innerHTML = '<div class="alert alert-info">No hay justificaciones</div>';
+        return;
+      }
+      var html = '<table><thead><tr><th>Estudiante</th><th>Fecha Falta</th><th>Tipo</th><th>Motivo</th><th>Registrado</th><th>Hora</th></tr></thead><tbody>';
+      res.justificaciones.forEach(function(j){
+        html += '<tr><td><b>'+j.nombre+'</b><br><small>'+j.grado+' '+j.seccion+'</small></td>'+
+          '<td>'+j.fechaFalta+'</td>'+
+          '<td><span class="badge badge-justificado">'+j.tipo+'</span></td>'+
+          '<td>'+j.motivo+'</td>'+
+          '<td>'+j.justificadoPor+'</td>'+
+          '<td>'+j.hora+'</td></tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('tablaJustificaciones').innerHTML = html;
+    })
+    .catch(function(){ document.getElementById('tablaJustificaciones').innerHTML = '<div class="alert alert-error">Error</div>'; });
+}
+
+// ESTUDIANTE
+function buscarEstudiante() {
+  var id = document.getElementById('buscarId').value.trim();
+  if (!id) { alert('Ingresa el ID'); return; }
+  document.getElementById('fichaEstudiante').innerHTML = '<div class="loading"><div class="spinner"></div><br>Buscando...</div>';
+
+  api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
+    .then(function(loginRes) {
+      if (loginRes.ok) SESSION.token = loginRes.token;
+      var p = new URLSearchParams({action:'obtenerEstudiante', token: SESSION.token, id: id});
+      return fetch(WEBAPP_URL+'?'+p.toString()).then(function(r){ return r.json(); });
+    })
+    .then(function(res) {
+      if (!res.ok) {
+        document.getElementById('fichaEstudiante').innerHTML = '<div class="alert alert-error">'+res.mensaje+'</div>';
+        return;
+      }
+      var e = res.estudiante;
+      var r = res.resumen || {};
+      var html =
+        '<div class="fichaGrid" style="margin-bottom:16px">'+
+          fichaItem('ID', e.id) +
+          fichaItem('Nombre', e.nombre) +
+          fichaItem('Grado', e.grado) +
+          fichaItem('Seccion', e.seccion) +
+          fichaItem('DNI', e.dni||'---') +
+          fichaItem('Tutor', e.tutor||'---') +
+          fichaItem('Apoderado', e.apoderado||'---') +
+          fichaItem('Cel. Apoderado', e.celApoderado||'---') +
+          fichaItem('Direccion', e.direccion||'---') +
+          fichaItem('Enfermedad', e.enfermedad||'---') +
+        '</div>'+
+        '<div class="statsGrid">'+
+          statCard(r.puntuales||0,'Puntuales','verde')+
+          statCard(r.tardanzas||0,'Tardanzas','naranja')+
+          statCard(r.faltas||0,'Faltas','rojo')+
+          statCard(r.totalJustificaciones||0,'Justificaciones','azul')+
+        '</div>';
+      document.getElementById('fichaEstudiante').innerHTML = html;
+    })
+    .catch(function(){ document.getElementById('fichaEstudiante').innerHTML = '<div class="alert alert-error">Error</div>'; });
+}
+
+function fichaItem(label, value) {
+  return '<div class="fichaItem"><label>'+label+'</label><span>'+value+'</span></div>';
+}
+
+// REPORTES
+function generarReportePDF() {
+  var id = document.getElementById('repId').value.trim();
+  var desde = document.getElementById('repDesde').value;
+  var hasta = document.getElementById('repHasta').value;
+  if (!id || !desde || !hasta) { alert('Completa todos los campos'); return; }
+  document.getElementById('repIndividual').innerHTML = '<div class="loading"><div class="spinner"></div><br>Generando reporte...</div>';
+
+  api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
+    .then(function(loginRes) {
+      if (loginRes.ok) SESSION.token = loginRes.token;
+      var p = new URLSearchParams({action:'obtenerReporteEstudiante', token: SESSION.token, idEstudiante: id, fechaInicio: desde, fechaFin: hasta});
+      return fetch(WEBAPP_URL+'?'+p.toString()).then(function(r){ return r.json(); });
+    })
+    .then(function(res) {
+      if (!res.ok) {
+        document.getElementById('repIndividual').innerHTML = '<div class="alert alert-error">'+res.mensaje+'</div>';
+        return;
+      }
+      generarPDFHTML(res);
+    })
+    .catch(function(){ document.getElementById('repIndividual').innerHTML = '<div class="alert alert-error">Error</div>'; });
+}
+
+function generarPDFHTML(data) {
+  var e = data.estudiante;
+  var r = data.resumen;
+  var registros = data.registros || [];
+  var html = '<div style="border:1px solid #ddd;border-radius:8px;padding:20px;margin-top:16px">' +
+    '<h3 style="color:#1a237e;margin-bottom:12px">Reporte de Asistencia</h3>' +
+    '<p><b>'+e.nombre+'</b> | '+e.grado+' '+e.seccion+' | DNI: '+(e.dni||'---')+'</p>' +
+    '<p style="color:#666;font-size:13px">Periodo: '+data.periodo.inicio+' al '+data.periodo.fin+'</p>' +
+    '<div class="statsGrid" style="margin:16px 0">'+
+      statCard(r.puntuales||0,'Puntuales','verde')+
+      statCard(r.tardanzas||0,'Tardanzas','naranja')+
+      statCard(r.faltas||0,'Faltas','rojo')+
+      statCard(r.totalJustificaciones||0,'Justificaciones','azul')+
+    '</div>';
+
+  if (registros.length > 0) {
+    html += '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">' +
+      '<thead><tr style="background:#f5f7ff"><th style="padding:8px;text-align:left">Fecha</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody>';
+    registros.forEach(function(r){
+      html += '<tr style="border-bottom:1px solid #eee;background:'+colorFila(r.estado)+'">' +
+        '<td style="padding:8px">'+r.fecha+'</td>' +
+        '<td style="padding:8px;text-align:center">'+(r.horaEntrada||'---')+'</td>' +
+        '<td style="padding:8px;text-align:center">'+(r.horaSalida||'---')+'</td>' +
+        '<td style="padding:8px;text-align:center">'+badgeEstado(r.estado)+'</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+
+  html += '<button onclick="imprimirReporte()" class="btnPrimary" style="margin-top:16px;max-width:200px">🖨️ Imprimir / PDF</button></div>';
+  document.getElementById('repIndividual').innerHTML = html;
+}
+
+function imprimirReporte() { window.print(); }
+
+function generarReporteExcel() {
+  alert('Reporte Excel: proximamente disponible.\nPor ahora puedes descargar la hoja ASISTENCIA del Google Sheets directamente.');
+}
+
+// ESTADISTICAS
+function cargarEstadisticas() {
+  document.getElementById('statsGenerales').innerHTML = '<div class="loading"><div class="spinner"></div><br>Cargando estadisticas...</div>';
+
+  api('login', {usuario: SESSION.usuario, clave: SESSION.clave})
+    .then(function(loginRes) {
+      if (loginRes.ok) SESSION.token = loginRes.token;
+      var p = new URLSearchParams({action:'obtenerEstadisticasDashboard', token: SESSION.token});
+      return fetch(WEBAPP_URL+'?'+p.toString()).then(function(r){ return r.json(); });
+    })
+    .then(function(res) {
+      if (!res.ok) {
+        document.getElementById('statsGenerales').innerHTML = '<div class="alert alert-error">'+res.mensaje+'</div>';
+        return;
+      }
+      renderEstadisticas(res);
+    })
+    .catch(function(){ document.getElementById('statsGenerales').innerHTML = '<div class="alert alert-error">Error al cargar</div>'; });
+}
+
+function renderEstadisticas(res) {
+  var hoy = res.hoy || {};
+  var html =
+    '<div class="card">'+
+      '<div class="cardTitle">📈 Resumen de Hoy — '+res.fecha+'</div>'+
+      '<div class="statsGrid">'+
+        statCard(res.totalEstudiantes||0,'Total Estudiantes','azul')+
+        statCard(hoy.registrados||0,'Registrados','verde')+
+        statCard(hoy.puntuales||0,'Puntuales','verde')+
+        statCard(hoy.tardanzas||0,'Tardanzas','naranja')+
+        statCard(hoy.faltas||0,'Faltas','rojo')+
+        statCard(hoy.sinRegistro||0,'Sin Registro','gris')+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="cardTitle">⚠️ Alertas Pendientes</div>'+
+      '<div class="alert '+(res.alertasPendientes>0?'alert-error':'alert-success')+'">'+
+        (res.alertasPendientes>0 ?
+          '⚠️ Hay '+res.alertasPendientes+' alertas pendientes de enviar por WhatsApp' :
+          '✅ No hay alertas pendientes')+
+      '</div>'+
+    '</div>';
+  document.getElementById('statsGenerales').innerHTML = html;
+}
+
+// SALIR
+function salir() {
+  if (!confirm('Cerrar sesion?')) return;
+  SESSION = null;
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('inpUsuario').value = '';
+  document.getElementById('inpClave').value = '';
+  document.getElementById('loginError').style.display = 'none';
+}
+</script>
+</body>
+</html>
