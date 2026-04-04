@@ -187,28 +187,32 @@ function iniciarScanner(){
   var st = document.getElementById("ftrStatus");
   st.textContent = "Iniciando camara...";
 
-  html5QrcodeScanner = new Html5Qrcode("reader");
-
-  Html5Qrcode.getCameras()
-    .then(function(cameras) {
-      if (!cameras || cameras.length === 0) {
-        st.textContent = "No se encontro camara";
-        return;
-      }
-      var camId = cameras[0].id;
-      return html5QrcodeScanner.start(
-        camId,
-        {
-          fps: 25,
-          qrbox: function(w,h){ return {width:Math.floor(w*0.85), height:Math.floor(h*0.85)}; },
-          experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-        },
-        function(txt){ onQRDetected(txt); },
-        function(){}
-      );
-    })
-    .then(function(){ st.textContent = "Escaneando..."; })
-    .catch(function(err){ st.textContent = "Error: " + err; });
+  // Dar tiempo al DOM para renderizar el div antes de iniciar
+  setTimeout(function() {
+    html5QrcodeScanner = new Html5Qrcode("reader");
+    Html5Qrcode.getCameras()
+      .then(function(cameras) {
+        if (!cameras || cameras.length === 0) {
+          st.textContent = "No se encontro camara";
+          return;
+        }
+        var camId = cameras[0].id;
+        return html5QrcodeScanner.start(
+          camId,
+          {
+            fps: 25,
+            qrbox: function(w,h){
+              return {width:Math.floor(w*0.85), height:Math.floor(h*0.85)};
+            },
+            experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+          },
+          function(txt){ onQRDetected(txt); },
+          function(){}
+        );
+      })
+      .then(function(){ st.textContent = "Escaneando..."; })
+      .catch(function(err){ st.textContent = "Error: " + err; });
+  }, 500);
 }
 
 function onQRDetected(texto){
@@ -221,25 +225,25 @@ function onQRDetected(texto){
   PROCESANDO=true;
   document.getElementById("ftrStatus").textContent="Procesando...";
 
-  var u = sessionStorage.getItem("qr_usuario");
-  var p = sessionStorage.getItem("qr_clave");
-
-  // Siempre hacer login fresco antes de escanear para garantizar token valido
-  llamarServidor("login", {usuario: u, clave: p})
-    .then(function(loginRes) {
-      if (!loginRes.ok) {
-        mostrarResultado({ok:false, tipo:"ERROR", mensaje:"Error de sesion. Reinicia la app."}, texto);
-        sndError();
-        return;
+  // Una sola llamada al servidor - solo registrar el ID
+  llamarServidor("escanear", {token: TOKEN, id: texto.trim()})
+    .then(function(res) {
+      // Si el token expiro, renovar y reintentar UNA vez
+      if (!res.ok && res.mensaje && res.mensaje.indexOf("Sesion") >= 0) {
+        var u = sessionStorage.getItem("qr_usuario");
+        var p = sessionStorage.getItem("qr_clave");
+        return llamarServidor("login", {usuario: u, clave: p})
+          .then(function(lr) {
+            if (!lr.ok) return {ok:false, mensaje:"Error de sesion"};
+            TOKEN = lr.token;
+            sessionStorage.setItem("qr_token", lr.token);
+            return llamarServidor("escanear", {token: TOKEN, id: texto.trim()});
+          });
       }
-      TOKEN = loginRes.token;
-      sessionStorage.setItem("qr_token", loginRes.token);
-      // Ahora escanear con token fresco
-      return llamarServidor("escanear", {token: TOKEN, id: texto.trim()});
+      return res;
     })
     .then(function(res) {
       if (!res) return;
-      console.log("RESPUESTA SERVIDOR:", JSON.stringify(res));
       mostrarResultado(res, texto);
       if(res.ok) {
         if(res.estado==="PUNTUAL") sndPuntual();
@@ -250,7 +254,7 @@ function onQRDetected(texto){
       }
     })
     .catch(function(err) {
-      mostrarResultado({ok:false, tipo:"ERROR", mensaje:"Error: "+err.message}, texto);
+      mostrarResultado({ok:false, tipo:"ERROR", mensaje:"Error de conexion"}, texto);
       sndError();
     });
 }
