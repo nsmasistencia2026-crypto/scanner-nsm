@@ -57,11 +57,9 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
 <div class="noInternet" id="noInternet">SIN CONEXION</div>
 
 <div id="loginScreen">
-  <div style="text-align:center;margin-bottom:16px">
-    <img src="https://res.cloudinary.com/dptysw4k8/image/upload/f_auto,q_auto/nsm_vlzrtw" alt="Logo NSM" style="width:90px;height:90px;object-fit:contain;border-radius:50%;background:#fff;padding:6px;box-shadow:0 4px 16px rgba(0,0,0,0.3)">
-  </div>
+
   <div class="logoTitle" style="font-size:32px;letter-spacing:2px">ASIST QR</div>
-  <div class="logoSub">I.E.E. Nuestra Senora de las Mercedes - Ayacucho</div>
+  <div class="logoSub">I.E.P. Faustino Sanchez Carrion - Miraflores - Ayacucho</div>
   <div class="loginBox">
     <div class="loginError" id="loginError"></div>
     <label class="fieldLabel">Usuario</label>
@@ -79,7 +77,7 @@ body { background:#0d0d0d; color:#f0f0f0; font-family:Arial,sans-serif; height:1
 <div id="scannerScreen">
   <div class="scanHeader">
     <div style="display:flex;align-items:center;gap:8px">
-      <img src="https://res.cloudinary.com/dptysw4k8/image/upload/f_auto,q_auto/nsm_vlzrtw" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:50%;background:#fff;padding:2px">
+      <img src="https://res.cloudinary.com/dptysw4k8/image/upload/v1775414482/LOGO_ULTIMO_OK_au7lf1.png" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:50%;background:#fff;padding:2px">
       <div class="scanHeaderInst" id="hdrInst">ASIST QR</div>
     </div>
     <div class="scanHeaderUser"><b id="hdrNombre">---</b><span id="hdrRol"></span></div>
@@ -114,7 +112,7 @@ var ULTIMO_ID = null;
 var ULTIMO_TIME = 0;
 var TIMER_RES = null;
 
-var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzbLmTjVOGjP6dCRLNQ69H2G44XW-M77KwaKDLGhiDavCRaBjfObb0VQm067Gjszez5/exec";
+var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyNWxMcm42kLOQwzMfsAOFLa6BUIoeFs1SIz1Z9lsIS5bVrLxbOFoUGosPx3ScFe1prQQ/exec";
 
 function playTone(f,t,d,g,dl){
   try{
@@ -258,6 +256,9 @@ function onQRDetected(texto){
   ULTIMO_ID = texto;
   ULTIMO_TIME = now;
   PROCESANDO = true;
+
+  // Eliminar ceros a la izquierda (ej: 0001 → 1, 0124 → 124)
+  texto = String(parseInt(texto, 10) || texto).trim();
 
   // 1. Calcular estado LOCALMENTE - inmediato
   var estadoLocal = calcularEstadoLocal();
