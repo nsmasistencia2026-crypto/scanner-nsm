@@ -296,13 +296,17 @@ function onQRDetected(texto){
 }
 
 function enviarAlServidor(id, hora) {
+  console.log("Enviando al servidor ID:", id, "TOKEN:", TOKEN ? "OK" : "VACIO");
   llamarServidor("escanear", {token: TOKEN, id: id})
     .then(function(res) {
+      console.log("Respuesta servidor:", JSON.stringify(res));
       if (!res.ok && res.mensaje && res.mensaje.indexOf("Sesion") >= 0) {
         var u = sessionStorage.getItem("qr_usuario");
         var p = sessionStorage.getItem("qr_clave");
+        console.log("Re-login con usuario:", u);
         return llamarServidor("login", {usuario: u, clave: p})
           .then(function(lr) {
+            console.log("Re-login resultado:", lr.ok);
             if (!lr.ok) return;
             TOKEN = lr.token;
             sessionStorage.setItem("qr_token", lr.token);
